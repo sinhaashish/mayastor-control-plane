@@ -10,7 +10,7 @@ use stor_port::types::v0::openapi::{
     },
 };
 use utils::{CREATED_BY_KEY, DSP_OPERATOR};
-
+use tracing::info;
 use regex::Regex;
 use std::{collections::HashMap, str::FromStr};
 use tonic::{Response, Status};
@@ -196,6 +196,7 @@ impl rpc::csi::controller_server::Controller for CsiControllerSvc {
         let args = request.into_inner();
         tracing::trace!(request = ?args);
         let _permit = self.create_volume_permit().await?;
+        info!(" ************************************************************************************* ");
 
         let volume_content_source = if let Some(source) = &args.volume_content_source {
             match &source.r#type {
@@ -263,6 +264,10 @@ impl rpc::csi::controller_server::Controller for CsiControllerSvc {
         let mut inclusive_label_topology: HashMap<String, String> = HashMap::new();
 
         inclusive_label_topology.insert(String::from(CREATED_BY_KEY), String::from(DSP_OPERATOR));
+        inclusive_label_topology.insert(String::from("ashish"), String::from("sinha"));
+        inclusive_label_topology.insert(String::from("aariv"), String::from("aashvi"));
+
+        info!( " inclusive_label_topology {:?}", inclusive_label_topology);
 
         let parsed_vol_uuid = Uuid::parse_str(&volume_uuid).map_err(|_e| {
             Status::invalid_argument(format!("Malformed volume UUID: {volume_uuid}"))

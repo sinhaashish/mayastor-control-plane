@@ -3,6 +3,7 @@ use crate::controller::scheduling::{
     volume::{AddVolumeReplica, CloneVolumeSnapshot, SnapshotVolumeReplica},
     NodeFilters,
 };
+use tracing::info;
 
 mod affinity_group;
 pub(crate) mod pool;
@@ -15,6 +16,7 @@ pub(super) use thick::ThickPolicy;
 struct DefaultBasePolicy {}
 impl DefaultBasePolicy {
     fn filter(request: AddVolumeReplica) -> AddVolumeReplica {
+        info!(" The deault filtet five");
         Self::filter_pools(Self::filter_nodes(request))
     }
     fn filter_nodes(request: AddVolumeReplica) -> AddVolumeReplica {

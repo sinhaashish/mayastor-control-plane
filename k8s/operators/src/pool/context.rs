@@ -252,12 +252,18 @@ impl ResourceContext {
     /// Create or import the pool, on failure try again.
     #[tracing::instrument(fields(name = ?self.name_any(), status = ?self.status) skip(self))]
     pub(crate) async fn create_or_import(self) -> Result<Action, Error> {
+        info!(" &self.spec.node() {:?}", &self.spec.node());
+        info!("topology {:?}", &self.spec.topology());
+        
         let mut labels: HashMap<String, String> = HashMap::new();
         labels.insert(
             String::from(utils::CREATED_BY_KEY),
             String::from(utils::DSP_OPERATOR),
         );
-
+        for (key, value) in self.spec.topology() {
+            labels.insert(key, value);
+        }
+        
         let body = CreatePoolBody::new_all(self.spec.disks(), labels);
         match self
             .pools_api()

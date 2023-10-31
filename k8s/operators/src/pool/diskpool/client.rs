@@ -2,6 +2,7 @@ use super::{
     v1alpha1::DiskPool as AlphaDiskPool,
     v1beta1::{DiskPool, DiskPoolSpec},
 };
+use std::collections::HashMap;
 use crate::error::Error;
 use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
 use kube::{
@@ -159,7 +160,7 @@ pub(crate) async fn migrate_to_v1beta1(
                     &name,
                     ns,
                     Some(res_ver.clone()),
-                    DiskPoolSpec::new(node, disk),
+                    DiskPoolSpec::new(node, disk, HashMap::new()),
                 )
                 .await?;
                 info!(crd = ?dsp.name_any(), "CR creation successful");
@@ -194,7 +195,7 @@ pub(crate) async fn create_missing_cr(
                     if let Some(spec) = &pool.spec {
                         warn!(pool.id, spec.node, "DiskPool CR is missing");
                         let cr_spec: DiskPoolSpec =
-                            DiskPoolSpec::new(spec.node.clone(), spec.disks.clone());
+                            DiskPoolSpec::new(spec.node.clone(), spec.disks.clone(), HashMap::new());
                         let new_disk_pool: DiskPool = DiskPool::new(&pool.id, cr_spec);
                         if let Err(error) = pools_api.create(&param, &new_disk_pool).await {
                             info!(pool.id, spec.node, %error, "Failed to create CR for missing DiskPool");

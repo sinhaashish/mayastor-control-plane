@@ -90,6 +90,7 @@ async fn reconcile(dsp: Arc<DiskPool>, ctx: Arc<OperatorContext>) -> Result<Acti
 }
 
 async fn pool_controller(args: ArgMatches) -> anyhow::Result<()> {
+    info!("two");
     let k8s = Client::try_default().await?;
     use k8s_openapi::apiextensions_apiserver::pkg::apis::apiextensions::v1::CustomResourceDefinition;
     let namespace = args.get_one::<String>("namespace").unwrap();
@@ -188,6 +189,7 @@ async fn pool_controller(args: ArgMatches) -> anyhow::Result<()> {
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
+    info!(" one ");
     let matches = clap::Command::new(utils::package_description!())
         .version(utils::version_info_str!())
         .arg(
@@ -290,7 +292,7 @@ pub(crate) async fn migrate_and_clean_msps(k8s: &Client, namespace: &str) -> Res
                     let disks = msp.spec.disks();
                     // Create the corresponding v1beta1 DiskPool CRs.
                     if let Err(error) =
-                        create_v1beta1_cr(k8s, namespace, &name, DiskPoolSpec::new(node, disks))
+                        create_v1beta1_cr(k8s, namespace, &name, DiskPoolSpec::new(node, disks, HashMap::new()))
                             .await
                     {
                         error!("Migration failed for {name} with: {error:?}");

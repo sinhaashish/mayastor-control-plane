@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use kube::CustomResource;
 use openapi::models::{pool_status::PoolStatus as RestPoolStatus, Pool};
 use schemars::JsonSchema;
@@ -31,12 +33,15 @@ pub struct DiskPoolSpec {
     node: String,
     /// The disk device the pool is located on
     disks: Vec<String>,
+    /// The labels for data placement
+    topology: HashMap<String,String>
+
 }
 
 impl DiskPoolSpec {
     /// Create a new DiskPoolSpec from the node and the disks.
-    pub fn new(node: String, disks: Vec<String>) -> Self {
-        Self { node, disks }
+    pub fn new(node: String, disks: Vec<String>,  topology: HashMap<String,String>) -> Self {
+        Self { node, disks, topology }
     }
     /// The node the pool is placed on.
     pub fn node(&self) -> String {
@@ -45,6 +50,11 @@ impl DiskPoolSpec {
     /// The disk devices that compose the pool.
     pub fn disks(&self) -> Vec<String> {
         self.disks.clone()
+    }
+
+      /// The topology for data placement.
+      pub fn topology(&self) -> HashMap<String,String> {
+        self.topology.clone()
     }
 }
 

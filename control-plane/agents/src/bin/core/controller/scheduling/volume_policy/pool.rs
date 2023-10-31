@@ -1,7 +1,7 @@
 use crate::controller::scheduling::{resources::PoolItem, volume::GetSuitablePoolsContext};
 use std::collections::HashMap;
 use stor_port::types::v0::transport::{PoolStatus, PoolTopology};
-
+use tracing::info;
 /// Filter pools used for replica creation.
 pub(crate) struct PoolBaseFilters {}
 impl PoolBaseFilters {
@@ -53,6 +53,7 @@ impl PoolBaseFilters {
     /// Should only attempt to use pools having specific creation label if topology has it.
     pub(crate) fn topology(request: &GetSuitablePoolsContext, item: &PoolItem) -> bool {
         let volume_pool_topology_labels: HashMap<String, String>;
+        info!("Aashvi {:?}", request.topology.clone());
         match request.topology.clone() {
             None => return true,
             Some(topology) => match topology.pool {
@@ -62,6 +63,7 @@ impl PoolBaseFilters {
                         // The labels in Volume Pool Topology should match the pool labels if
                         // present, otherwise selection of any pool is allowed.
                         if !labelled_topology.inclusion.is_empty() {
+                            info!("ashish {:?}", labelled_topology.inclusion);
                             volume_pool_topology_labels = labelled_topology.inclusion
                         } else {
                             return true;
