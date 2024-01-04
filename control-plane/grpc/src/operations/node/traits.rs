@@ -42,6 +42,10 @@ pub trait NodeOperations: Send + Sync {
     async fn uncordon(&self, id: NodeId, label: String) -> Result<Node, ReplyError>;
     /// Drain the node with the given ID and associate the label with the draining node.
     async fn drain(&self, id: NodeId, label: String) -> Result<Node, ReplyError>;
+    /// Associate the labels with the given node.
+    async fn label(&self, id: NodeId, label: String) -> Result<Node, ReplyError>;
+    /// Remove label from the a given node.
+    async fn unlabel(&self, id: NodeId, label: String) -> Result<Node, ReplyError>;
 }
 
 impl TryFrom<node::Node> for Node {
