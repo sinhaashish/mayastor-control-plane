@@ -181,6 +181,11 @@ pub enum SvcError {
     Internal { details: String },
     #[snafu(display("Invalid Arguments"))]
     InvalidArguments {},
+    #[snafu(display("Invalid {}, labels: {} ", resource_kind, labels))]
+    InvalidLabel {
+        labels: String,
+        resource_kind: ResourceKind,
+    },
     #[snafu(display("Multiple nexuses not supported"))]
     MultipleNexuses {},
     #[snafu(display("Storage Error: {}", source))]
@@ -705,6 +710,12 @@ impl From<SvcError> for ReplyError {
             SvcError::Internal { .. } => ReplyError {
                 kind: ReplyErrorKind::Internal,
                 resource: ResourceKind::Unknown,
+                source,
+                extra,
+            },
+            SvcError::InvalidLabel { resource_kind, .. } => ReplyError {
+                kind: ReplyErrorKind::InvalidArgument,
+                resource: resource_kind,
                 source,
                 extra,
             },
