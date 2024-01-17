@@ -23,6 +23,7 @@ impl DefaultBasePolicy {
             .filter(NodeFilters::online_for_pool)
             .filter(NodeFilters::allowed)
             .filter(NodeFilters::unused)
+            //.filter(NodeFilters::node_topology)
     }
     fn filter_pools(request: AddVolumeReplica) -> AddVolumeReplica {
         request

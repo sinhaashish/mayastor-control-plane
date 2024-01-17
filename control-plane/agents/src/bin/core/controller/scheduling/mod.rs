@@ -11,6 +11,7 @@ use crate::controller::scheduling::{
     volume::{GetSuitablePoolsContext, ReplicaResizePoolsContext, VolumeReplicasForNexusCtx},
 };
 use std::{cmp::Ordering, collections::HashMap, future::Future};
+use stor_port::types::v0::transport::NodeTopology;
 use weighted_scoring::{Criteria, Value, ValueGrading, WeightedScore};
 
 #[async_trait::async_trait(?Send)]
@@ -210,6 +211,61 @@ impl NodeFilters {
             true
         }
     }
+    /// Should only attempt to use nodes having specific creation label if topology has it.
+    pub(crate) fn topology(request: &GetSuitableNodesContext, item: &NodeItem) -> bool {
+        println!("ASHISH");
+        let volume_node_topology_inclusion_labels: HashMap<String, String>;
+        let volume_node_topology_exclusion_labels: HashMap<String, String>;
+        match request.topology.clone() {
+            None => return true,
+            Some(topology) => match topology.node {
+                None => return true,
+                Some(node_topology) => match node_topology {
+                    NodeTopology::Labelled(labelled_topology) => {
+                        // Return false if the exclusion and incluson labels has any common key.
+                        if labelled_topology
+                            .inclusion
+                            .keys()
+                            .any(|key| labelled_topology.exclusion.contains_key(key))
+                        {
+                            return false;
+                        }
+
+                        if !labelled_topology.inclusion.is_empty()
+                            || !labelled_topology.exclusion.is_empty()
+                        {
+                            volume_node_topology_inclusion_labels = labelled_topology.inclusion;
+                            volume_node_topology_exclusion_labels = labelled_topology.exclusion;
+                        } else {
+                            return true;
+                        }
+                    }
+                    NodeTopology::Explicit(_) => todo!(),
+                },
+            },
+        };
+
+        // We will reach this part of code only if the volume has node inclusion/exclusion labels.
+        match request
+            .registry()
+            .specs()
+            .node(&item.node_wrapper.node_state.id())
+        {
+            Ok(spec) => {
+                // Inclusion condition
+                let inc_qualify = does_node_qualify_inclusion_labels(
+                    volume_node_topology_inclusion_labels,
+                    spec.labels,
+                );
+                // let exc_qualify = does_node_qualify_exclusion_labels(
+                //     volume_node_topology_exclusion_labels,
+                //     spec.labels,
+                // );
+                return inc_qualify;
+            }
+            Err(_) => false,
+        }
+    }
     /// Should only attempt to use node where there are no targets for the current volume.
     pub(crate) fn no_targets(request: &GetSuitableNodesContext, item: &NodeItem) -> bool {
         let volume_targets = request.registry().specs().volume_nexuses(&request.uuid);
@@ -218,6 +274,57 @@ impl NodeFilters {
             .any(|n| &n.lock().node == item.node_wrapper().id())
     }
 }
+
+/// Retruns true if all the keys in volume inclusive labels
+/// matches to the node labels; otherwise returns false
+pub(crate) fn does_node_qualify_inclusion_labels(
+    vol_inc_labels: HashMap<String, String>,
+    node_labels: HashMap<String, String>,
+) -> bool {
+    println!("vol_inc_labels {:?}", vol_inc_labels);
+    println!("node_labels {:?}", node_labels);
+    let mut inc_match = true; // Initialize to true, assuming inclusive match until proven otherwise
+    for (vol_inc_key, vol_inc_value) in vol_inc_labels.iter() {
+        match node_labels.get(vol_inc_key) {
+            Some(node_val) => {
+                if node_val != vol_inc_value {
+                    inc_match = false;
+                    break; // No need to continue checking once a mismatch is found
+                }
+            }
+            None => {
+                inc_match = false;
+                break; // No need to continue checking if a key is not present
+            }
+        }
+    }
+    inc_match
+}
+
+
+// /// Retruns true if all the keys in volume inclusive labels
+// /// matches to the node labels; otherwise returns false
+// pub(crate) fn does_node_qualify_exclusion_labels(
+//     vol_exc_labels: HashMap<String, String>,
+//     node_labels: HashMap<String, String>,
+// ) -> bool {
+//     let mut inc_match = true; // Initialize to true, assuming inclusive match until proven otherwise
+//     for (vol_inc_key, vol_inc_value) in vol_exc_labels.iter() {
+//         match node_labels.get(vol_inc_key) {
+//             Some(node_val) => {
+//                 if node_val != vol_inc_value {
+//                     inc_match = false;
+//                     break; // No need to continue checking once a mismatch is found
+//                 }
+//             }
+//             None => {
+//                 inc_match = false;
+//                 break; // No need to continue checking if a key is not present
+//             }
+//         }
+//     }
+//     inc_match
+// }
 
 /// Sort the nexus children for removal when decreasing a volume's replica count
 pub(crate) struct ChildSorters {}
