@@ -88,6 +88,15 @@ impl apis::actix_server::Pools for RestApi {
         Ok(pools.into_inner().into_iter().map(From::from).collect())
     }
 
+    async fn patch_node_pool(
+        Path(pool_id): Path<String>,
+        Body(edit_pool_body): Body<models::EditPoolBody>,
+    ) -> Result<models::Pool, RestError<RestJsonError>> {
+        let edit = EditPoolBody::from(edit_pool_body).to_request(pool_id.into());
+        let pool = client().patch(&edit, None).await?;
+        Ok(pool.into())
+    }
+
     async fn put_node_pool(
         Path((node_id, pool_id)): Path<(String, String)>,
         Body(create_pool_body): Body<models::CreatePoolBody>,

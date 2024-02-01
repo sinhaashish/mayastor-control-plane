@@ -11,8 +11,8 @@ use stor_port::{
         store::pool::{PoolLabel, PoolSpec, PoolSpecStatus},
         transport,
         transport::{
-            CreatePool, CtrlPoolState, DestroyPool, Filter, NodeId, Pool, PoolDeviceUri, PoolId,
-            PoolState,
+            CreatePool, CtrlPoolState, DestroyPool, EditPool, Filter, NodeId, Pool, PoolDeviceUri,
+            PoolId, PoolState,
         },
     },
     IntoOption,
@@ -35,6 +35,12 @@ pub trait PoolOperations: Send + Sync {
     ) -> Result<(), ReplyError>;
     /// Get pools based on the filters
     async fn get(&self, filter: Filter, ctx: Option<Context>) -> Result<Pools, ReplyError>;
+    /// Edit a pool
+    async fn patch(
+        &self,
+        pool: &dyn EditPoolInfo,
+        ctx: Option<Context>,
+    ) -> Result<Pool, ReplyError>;
 }
 
 impl TryFrom<pool::PoolDefinition> for PoolSpec {
@@ -215,6 +221,58 @@ impl From<get_pools_request::Filter> for Filter {
             get_pools_request::Filter::Pool(pool_filter) => {
                 Filter::Pool(pool_filter.pool_id.into())
             }
+        }
+    }
+}
+
+/// EditPoolInfo trait for the pool edit to be implemented by entities which want to avail
+/// this operation
+pub trait EditPoolInfo: Send + Sync + std::fmt::Debug {
+    /// Id of the pool
+    fn pool_id(&self) -> PoolId;
+    /// Labels to be set on the pool
+    fn labels(&self) -> Option<PoolLabel>;
+}
+
+impl EditPoolInfo for EditPool {
+    fn pool_id(&self) -> PoolId {
+        self.id.clone()
+    }
+
+    fn labels(&self) -> Option<PoolLabel> {
+        self.labels.clone()
+    }
+}
+
+impl EditPoolInfo for EditPoolRequest {
+    fn pool_id(&self) -> PoolId {
+        self.pool_id.clone().into()
+    }
+
+    fn labels(&self) -> Option<PoolLabel> {
+        match self.labels.clone() {
+            None => None,
+            Some(labels) => Some(labels.value),
+        }
+    }
+}
+
+impl From<&dyn EditPoolInfo> for EditPoolRequest {
+    fn from(data: &dyn EditPoolInfo) -> Self {
+        Self {
+            pool_id: data.pool_id().to_string(),
+            labels: data
+                .labels()
+                .map(|labels| crate::common::StringMapValue { value: labels }),
+        }
+    }
+}
+
+impl From<&dyn EditPoolInfo> for EditPool {
+    fn from(data: &dyn EditPoolInfo) -> Self {
+        Self {
+            id: data.pool_id(),
+            labels: data.labels(),
         }
     }
 }

@@ -850,6 +850,7 @@ paths:
           $ref: '#/components/responses/ServerError'
       security:
         - JWT: []
+  
   '/nodes/{node_id}/pools/{pool_id}/replicas':
     get:
       tags:
@@ -1183,6 +1184,35 @@ paths:
       responses:
         '204':
           description: OK
+        '4XX':
+          $ref: '#/components/responses/ClientError'
+        '5XX':
+          $ref: '#/components/responses/ServerError'
+      security:
+        - JWT: []
+    patch:
+      tags:
+        - Pools
+      operationId: patch_node_pool
+      parameters:
+        - in: path
+          name: pool_id
+          required: true
+          schema:
+            $ref: '#/components/schemas/PoolId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EditPoolBody'
+        required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pool'
         '4XX':
           $ref: '#/components/responses/ClientError'
         '5XX':
@@ -2363,6 +2393,21 @@ components:
             type: string
       required:
         - disks
+    EditPoolBody:
+      example:
+        topology:
+          labelled:
+            storage: hot
+      description: Edit Pool Body
+      type: object
+      properties:
+        labels:
+          description: labels to be set on the pools
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - labels
     HostNqn:
       example: nqn.2014-08.org.nvmexpress:uuid:804b1e8c-b42d-4d15-92b4-7c4e4d0f507
       description: |-

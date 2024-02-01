@@ -308,6 +308,26 @@ impl CreatePool {
 /// Create Pool Request.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct EditPool {
+    /// Id of the pool.
+    pub id: PoolId,
+    /// Labels to be set on the pool.
+    pub labels: Option<PoolLabel>,
+}
+
+impl EditPool {
+    /// Create new `Self` from the given parameters.
+    pub fn new(id: &PoolId, labels: &Option<PoolLabel>) -> Self {
+        Self {
+            id: id.clone(),
+            labels: labels.clone(),
+        }
+    }
+}
+
+/// Create Pool Request.
+#[derive(Serialize, Deserialize, Default, Debug, Clone, Eq, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ImportPool {
     /// Id of the io-engine instance.
     pub node: NodeId,

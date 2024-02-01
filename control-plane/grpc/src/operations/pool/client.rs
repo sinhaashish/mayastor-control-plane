@@ -4,7 +4,7 @@ use crate::{
     operations::pool::traits::{CreatePoolInfo, DestroyPoolInfo, PoolOperations},
     pool::{
         create_pool_reply, get_pools_reply, get_pools_request, pool_grpc_client::PoolGrpcClient,
-        GetPoolsRequest,
+        CreatePoolReply, CreatePoolRequest, EditPoolReply, EditPoolRequest, GetPoolsRequest,
     },
 };
 use std::{convert::TryFrom, ops::Deref};
@@ -13,6 +13,8 @@ use stor_port::{
     types::v0::transport::{Filter, MessageIdVs, Pool},
 };
 use tonic::transport::Uri;
+
+use super::traits::EditPoolInfo;
 
 /// RPC Pool Client
 #[derive(Clone)]
@@ -50,6 +52,23 @@ impl PoolOperations for PoolClient {
             Some(create_pool_reply) => match create_pool_reply {
                 create_pool_reply::Reply::Pool(pool) => Ok(Pool::try_from(pool)?),
                 create_pool_reply::Reply::Error(err) => Err(err.into()),
+            },
+            None => Err(ReplyError::invalid_response(ResourceKind::Pool)),
+        }
+    }
+
+    #[tracing::instrument(name = "PoolClient::patch", level = "debug", skip(self), err)]
+    async fn patch(
+        &self,
+        request: &dyn EditPoolInfo,
+        ctx: Option<Context>,
+    ) -> Result<Pool, ReplyError> {
+        let req = self.request(request, ctx, MessageIdVs::EditPool);
+        let response = self.client().patch_pool(req).await?.into_inner();
+        match response.reply {
+            Some(create_pool_reply) => match create_pool_reply {
+                edit_pool_reply::Reply::Pool(pool) => Ok(Pool::try_from(pool)?),
+                edit_pool_reply::Reply::Error(err) => Err(err.into()),
             },
             None => Err(ReplyError::invalid_response(ResourceKind::Pool)),
         }

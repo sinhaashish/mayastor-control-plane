@@ -11,7 +11,7 @@ use agents::errors::{PoolNotFound, ReplicaNotFound, SvcError};
 use grpc::{
     context::Context,
     operations::{
-        pool::traits::{CreatePoolInfo, DestroyPoolInfo, PoolOperations},
+        pool::traits::{CreatePoolInfo, DestroyPoolInfo, EditPoolInfo, PoolOperations},
         replica::traits::{
             CreateReplicaInfo, DestroyReplicaInfo, ReplicaOperations, ShareReplicaInfo,
             UnshareReplicaInfo,
@@ -44,6 +44,17 @@ impl PoolOperations for Service {
     async fn create(
         &self,
         pool: &dyn CreatePoolInfo,
+        _ctx: Option<Context>,
+    ) -> Result<Pool, ReplyError> {
+        let req = pool.into();
+        let service = self.clone();
+        let pool = Context::spawn(async move { service.create_pool(&req).await }).await??;
+        Ok(pool)
+    }
+
+    async fn patch(
+        &self,
+        pool: &dyn EditPoolInfo,
         _ctx: Option<Context>,
     ) -> Result<Pool, ReplyError> {
         let req = pool.into();

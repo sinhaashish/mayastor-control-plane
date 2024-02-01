@@ -4,8 +4,8 @@ use crate::{
     pool::{
         create_pool_reply, get_pools_reply,
         pool_grpc_server::{PoolGrpc, PoolGrpcServer},
-        CreatePoolReply, CreatePoolRequest, DestroyPoolReply, DestroyPoolRequest, GetPoolsReply,
-        GetPoolsRequest,
+        CreatePoolReply, CreatePoolRequest, DestroyPoolReply, DestroyPoolRequest, EditPoolReply,
+        EditPoolRequest, GetPoolsReply, GetPoolsRequest,
     },
 };
 use std::sync::Arc;
@@ -42,6 +42,21 @@ impl PoolGrpc for PoolServer {
             })),
             Err(err) => Ok(Response::new(CreatePoolReply {
                 reply: Some(create_pool_reply::Reply::Error(err.into())),
+            })),
+        }
+    }
+
+    async fn patch_pool(
+        &self,
+        request: Request<EditPoolRequest>,
+    ) -> Result<tonic::Response<pool::EditPoolReply>, tonic::Status> {
+        let req: EditPoolRequest = request.into_inner();
+        match self.service.patch(&req, None).await {
+            Ok(pool) => Ok(Response::new(EditPoolReply {
+                reply: Some(edit_pool_reply::Reply::Pool(pool.into())),
+            })),
+            Err(err) => Ok(Response::new(EditPoolReply {
+                reply: Some(edit_pool_reply::Reply::Error(err.into())),
             })),
         }
     }

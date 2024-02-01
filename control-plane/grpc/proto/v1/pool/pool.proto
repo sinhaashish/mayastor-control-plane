@@ -99,6 +99,23 @@ message CreatePoolRequest {
   optional common.StringMapValue labels = 5;
 }
 
+// Edit Pool Request
+message EditPoolRequest {
+  // id of the pool
+  string pool_id = 1;
+  // labels to be set on the pool
+  optional common.StringMapValue labels = 2;
+}
+
+
+// Reply type for a EditPool request
+message EditPoolReply {
+  oneof reply {
+    Pool pool = 1;
+    common.ReplyError error = 2;
+  }
+}
+
 // Destroy Pool Request
 message DestroyPoolRequest {
   // id of the pool

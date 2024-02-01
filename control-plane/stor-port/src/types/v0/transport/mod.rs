@@ -75,6 +75,8 @@ pub enum MessageIdVs {
     GetPools,
     /// Create Pool.
     CreatePool,
+    /// Edit Pool.
+    EditPool,
     /// Destroy Pool.
     DestroyPool,
     /// Import Pool.
