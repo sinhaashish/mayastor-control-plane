@@ -35,10 +35,10 @@ use stor_port::{
             volume::{PublishOperation, RepublishOperation, VolumeOperation, VolumeSpec},
         },
         transport::{
-            CreateVolume, DestroyNexus, DestroyReplica, DestroyShutdownTargets, DestroyVolume,
-            Protocol, PublishVolume, Replica, ReplicaId, ReplicaOwners, RepublishVolume,
-            ResizeVolume, SetVolumeReplica, ShareNexus, ShareVolume, ShutdownNexus,
-            UnpublishVolume, UnshareNexus, UnshareVolume, Volume,
+            CreateReplica, CreateVolume, DestroyNexus, DestroyReplica, DestroyShutdownTargets,
+            DestroyVolume, Protocol, PublishVolume, Replica, ReplicaId, ReplicaOwners,
+            RepublishVolume, ResizeVolume, SetVolumeReplica, ShareNexus, ShareVolume,
+            ShutdownNexus, UnpublishVolume, UnshareNexus, UnshareVolume, Volume,
         },
     },
 };
@@ -938,6 +938,11 @@ impl CreateVolumeExe for CreateVolume {
             } else if replicas.iter().any(|r| r.node == replica.node) {
                 // don't reuse the same node
                 continue;
+            } else if replicas
+                .iter()
+                .any(|r| spread_label_is_same(r, replica, context.registry))
+            {
+                continue;
             }
             let replica = if replicas.is_empty() {
                 let mut replica = replica.clone();
@@ -993,4 +998,66 @@ impl CreateVolumeExeVal for CreateVolumeSource<'_> {
             CreateVolumeSource::Snapshot(params) => params.pre_flight_check(),
         }
     }
+}
+
+fn spread_label_is_same(
+    replica: &Replica,
+    replica_candidate: &CreateReplica,
+    registry: &Registry,
+) -> bool {
+    let candidate_node = registry.specs().node(&replica_candidate.node).unwrap();
+    let replica_node = registry.specs().node(&replica.node).unwrap();
+    tracing::info!("candidate_node {:?}", candidate_node);
+    tracing::info!("replica_node {:?}", replica_node);
+    return true;
+    // match &request.topology {
+    //     None => return true,
+    //     Some(topology) => {
+    //         match &topology.node {
+    //             None => return true,
+    //             Some(node_topology) => match node_topology {
+    //                 NodeTopology::Labelled(labelled_topology) => {
+    //                     // If the NodeSpreadTopologyKey is present in the Volume Node Topology,
+    // then                     // get the node details from replica candidate and check if the
+    // node labels                     // is same as that of all existing replicas. If its same
+    // then don't consider the                     // node for replica creation
+    //                     if !labelled_topology.exclusion.is_empty() {
+    //                         let candidate_node =
+    // registry.specs().node(&replica_candidate.node).unwrap();                         let
+    // replica_node = registry.specs().node(&replica.node).unwrap();
+    // tracing::info!("candidate_node {:?}", candidate_node);
+    // tracing::info!("replica_node {:?}", replica_node);                         if
+    // candidate_node.labels() == replica_node.labels() {                             return
+    // true;                         } else {
+    //                             return false;
+    //                         }
+    //                         println!("Exclusion is not empty");
+    //                         return false;
+    //                     } else {
+    //                         return true;
+    //                     }
+    //                 }
+    //                 NodeTopology::Explicit(_) => todo!(),
+    //             },
+    //         }
+
+    //         match &topology.pool {
+    //             None => return true,
+    //             Some(node_topology) => match node_topology {
+    //                 PoolTopology::Labelled(labelled_topology) => {
+    //                     // If the PoolSpreadTopologyKey is present in the Volume Pool Topology,
+    // then                     // get the pool details from replica candidate and check if the
+    // pool labels                     // is same as that of all existing replicas. If its same
+    // then don't consider the                     // pool for replica creation
+    //                     if !labelled_topology.exclusion.is_empty() {
+    //                         println!("Exclusion is not empty");
+    //                         return false;
+    //                     } else {
+    //                         return true;
+    //                     }
+    //                 }
+    //             },
+    //         }
+    //     }
+    // }
 }

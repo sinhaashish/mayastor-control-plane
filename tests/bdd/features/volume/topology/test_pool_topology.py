@@ -341,60 +341,6 @@ def get_pool_names_with_given_labels(pool_label):
 # Return the create volume request body based on the input parameters.
 def create_volume_body(replica, volume_pool_topology_inclusion_label):
     """Create a volume body."""
-    # if volume_pool_topology_inclusion_label == "zone-us=us-west-1":
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-us": "us-west-1"},
-    #             )
-    #         )
-    #     )
-    # elif volume_pool_topology_inclusion_label == "zone-ap=ap-south-1":
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-ap": "ap-south-1"},
-    #             )
-    #         )
-    #     )
-    # elif volume_pool_topology_inclusion_label == "zone-eu=eu-west-3":
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-eu": "eu-west-3"},
-    #             )
-    #         )
-    #     )
-    # elif volume_pool_topology_inclusion_label == "zone-us":
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-us": ""},
-    #             )
-    #         )
-    #     )
-    # elif volume_pool_topology_inclusion_label == "zone-ap":
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-ap": ""},
-    #             )
-    #         )
-    #     )
-    # elif volume_pool_topology_inclusion_label == "zone-eu":  
-    #     topology = Topology(
-    #         pool_topology=PoolTopology(
-    #             labelled=LabelledTopology(
-    #                 exclusion={},
-    #                 inclusion={"openebs.io/created-by": "operator-diskpool", "zone-eu": ""},
-    #             )
-    #         )
-    #     )
     key, _, value = volume_pool_topology_inclusion_label.partition("=")
     topology = Topology(
                 pool_topology=PoolTopology(
