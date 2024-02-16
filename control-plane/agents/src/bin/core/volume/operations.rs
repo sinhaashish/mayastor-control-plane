@@ -35,10 +35,10 @@ use stor_port::{
             volume::{PublishOperation, RepublishOperation, VolumeOperation, VolumeSpec},
         },
         transport::{
-            CreateVolume, DestroyNexus, DestroyReplica, DestroyShutdownTargets, DestroyVolume,
-            Protocol, PublishVolume, Replica, ReplicaId, ReplicaOwners, RepublishVolume,
-            ResizeVolume, SetVolumeReplica, ShareNexus, ShareVolume, ShutdownNexus,
-            UnpublishVolume, UnshareNexus, UnshareVolume, Volume,
+            CreateReplica, CreateVolume, DestroyNexus, DestroyReplica, DestroyShutdownTargets,
+            DestroyVolume, NodeTopology, PoolTopology, Protocol, PublishVolume, Replica, ReplicaId,
+            ReplicaOwners, RepublishVolume, ResizeVolume, SetVolumeReplica, ShareNexus,
+            ShareVolume, ShutdownNexus, UnpublishVolume, UnshareNexus, UnshareVolume, Volume,
         },
     },
 };
@@ -942,8 +942,11 @@ impl CreateVolumeExe for CreateVolume {
         for replica in candidates.candidates() {
             if replicas.len() >= self.replicas as usize {
                 break;
-            } else if replicas.iter().any(|r| r.node == replica.node) {
-                // don't reuse the same node
+            } else if replicas
+                .iter()
+                .any(|r| (r.node == replica.node || spread_label_is_same(r, replica, context)))
+            {
+                // don't reuse the same node or same exclusion labels
                 continue;
             }
             let replica = if replicas.is_empty() {
@@ -1000,4 +1003,69 @@ impl CreateVolumeExeVal for CreateVolumeSource<'_> {
             CreateVolumeSource::Snapshot(params) => params.pre_flight_check(),
         }
     }
+}
+
+fn spread_label_is_same(
+    replica: &Replica,
+    replica_candidate: &CreateReplica,
+    context: &Context,
+) -> bool {
+    tracing::info!(" one {:#?} ", &context.volume.as_ref().topology);
+    match &context.volume.as_ref().topology {
+        None => return false,
+        Some(topology) => {
+            match &topology.node {
+                None => return false,
+                Some(node_topology) => match node_topology {
+                    NodeTopology::Labelled(labelled_topology) => {
+                        // If the NodeSpreadTopologyKey is present in the Volume Node Topology,
+                        // then get the node details from replica candidate and check if the
+                        // node labels is same as that of all existing replicas. If its same
+                        // then don't consider the node for replica creation
+                        if !labelled_topology.exclusion.is_empty()
+                            && is_label_same(context, replica, replica_candidate)
+                        {
+                            tracing::info!(" three");
+                            return true;
+                        }
+                    }
+                    NodeTopology::Explicit(_) => return false,
+                },
+            }
+
+            match &topology.pool {
+                None => return false,
+                Some(pool_topology) => match pool_topology {
+                    PoolTopology::Labelled(labelled_topology) => {
+                        // If the PoolSpreadTopologyKey is present in the Volume Pool Topology, then
+                        // get the pool details from replica candidate and
+                        // check if the pool labels is same as that of all existing replicas.
+                        // If its same then don't consider the pool for replica creation
+                        if !labelled_topology.exclusion.is_empty()
+                            && is_label_same(context, replica, replica_candidate)
+                        {
+                            tracing::info!(" four");
+                            return true;
+                        }
+                    }
+                },
+            }
+        }
+    }
+    false
+}
+
+fn is_label_same(context: &Context, replica: &Replica, replica_candidate: &CreateReplica) -> bool {
+    let candidate_node = context
+        .registry
+        .specs()
+        .node(&replica_candidate.node)
+        .unwrap();
+    let replica_node = context.registry.specs().node(&replica.node).unwrap();
+    tracing::info!("candidate_node {:?}", candidate_node);
+    tracing::info!("replica_node {:?}", replica_node);
+    if candidate_node.labels() == replica_node.labels() {
+        return true;
+    }
+    false
 }
