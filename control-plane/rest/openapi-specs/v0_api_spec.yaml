@@ -2468,6 +2468,8 @@ components:
           - ''
         inclusion:
           - ''
+        affinity:
+          - ''
       description: labelled topology
       type: object
       properties:
@@ -2497,9 +2499,22 @@ components:
           type: object
           additionalProperties:
             type: string
+        affinity  :
+          example: ''
+          description: |-
+            Includes resources with the same $label eg:
+             if label is "Zone":
+             A resource matching the label is decided initially and
+             all other resources are paired with the same label
+             A resource with "Zone" would be choose the label as "Zone: A"
+             and all other resoures will be paired with label "Zone: A"
+          type: object
+          additionalProperties:
+            type: string
       required:
         - exclusion
         - inclusion
+        - affinity
     Topology:
       description: node and pool topology for volumes
       type: object
