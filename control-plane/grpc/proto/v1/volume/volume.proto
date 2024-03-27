@@ -158,7 +158,13 @@ message LabelledTopology {
   // inclusive labels
   common.StringMapValue inclusion = 2;
   // affinity labels
-  common.StringMapValue affinity = 3;
+  //common.StringMapValue affinity = 3;
+  optional AffinityLabels affinity_labels = 3;
+}
+
+message AffinityLabels{
+  // Registered targets for the volume.
+  repeated string affinity = 1;
 }
 
 message ExplicitNodeTopology {

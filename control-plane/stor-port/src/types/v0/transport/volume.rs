@@ -257,7 +257,7 @@ pub struct LabelledTopology {
     pub inclusion: HashMap<String, String>,
     /// Affinity labels.
     #[serde(default)]
-    pub affinity: HashMap<String, String>,
+    pub affinity: Vec<String>,
 }
 
 impl From<models::LabelledTopology> for LabelledTopology {

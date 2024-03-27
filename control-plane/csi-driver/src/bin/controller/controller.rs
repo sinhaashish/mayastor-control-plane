@@ -1067,8 +1067,8 @@ fn context_into_topology(context: &CreateParams) -> CreateVolumeTopology {
     // labels for pool inclusion
     let mut pool_inclusive_label_topology: HashMap<String, String> = HashMap::new();
     let mut node_inclusive_label_topology: HashMap<String, String> = HashMap::new();
-    let mut pool_affinity_label_topology: HashMap<String, String> = HashMap::new();
-    let mut node_affinity_label_topology: HashMap<String, String> = HashMap::new();
+    let mut pool_affinity_label_topology: Vec<String> = Vec::<String>::new();
+    let mut node_affinity_label_topology: Vec<String> = Vec::<String>::new();
     pool_inclusive_label_topology.insert(String::from(CREATED_BY_KEY), String::from(DSP_OPERATOR));
     pool_inclusive_label_topology.extend(
         context

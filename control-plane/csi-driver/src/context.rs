@@ -118,6 +118,27 @@ impl Parameters {
         })
     }
 
+    fn parse_topology_param_vec(
+        value: Option<&String>,
+    ) -> Result<Option<Vec<String>>, tonic::Status> {
+        Ok(match value {
+            Some(labels) => {
+                let mut result_vec = Vec::new();
+                for label in labels.split('\n') {
+                    if !label.is_empty() {
+                        result_vec.push(label.to_string())
+                    } else {
+                        return Err(tonic::Status::invalid_argument(format!(
+                            "Invalid label : {value:?}"
+                        )));
+                    }
+                }
+                Some(result_vec)
+            }
+            None => None,
+        })
+    }
+
     fn parse_u32(value: Option<&String>) -> Result<Option<u32>, ParseIntError> {
         Ok(match value {
             Some(value) => value.parse::<u32>().map(Some)?,
@@ -181,8 +202,8 @@ impl Parameters {
     /// Parse the value for `Self::PoolAffinityTopologyKey`.
     pub fn pool_affinity_topology_key(
         value: Option<&String>,
-    ) -> Result<Option<HashMap<String, String>>, tonic::Status> {
-        Self::parse_topology_param(value)
+    ) -> Result<Option<Vec<String>>, tonic::Status> {
+        Self::parse_topology_param_vec(value)
     }
     /// Parse the value for `Self::PoolHasTopologyKey`.
     pub fn pool_has_topology_key(
@@ -199,8 +220,8 @@ impl Parameters {
     /// Parse the value for `Self::NodeAffinityTopologyKey`.
     pub fn node_affinity_topology_key(
         value: Option<&String>,
-    ) -> Result<Option<HashMap<String, String>>, tonic::Status> {
-        Self::parse_topology_param(value)
+    ) -> Result<Option<Vec<String>>, tonic::Status> {
+        Self::parse_topology_param_vec(value)
     }
     /// Parse the value for `Self::NodeHasTopologyKey`.
     pub fn node_has_topology_key(
@@ -225,10 +246,10 @@ pub struct PublishParams {
     fs_type: Option<FileSystem>,
     fs_id: Option<Uuid>,
     pool_affinity_topology_label: Option<HashMap<String, String>>,
-    pool_affinity_topology_key: Option<HashMap<String, String>>,
+    pool_affinity_topology_key: Option<Vec<String>>,
     pool_has_topology_key: Option<HashMap<String, String>>,
     node_affinity_topology_label: Option<HashMap<String, String>>,
-    node_affinity_topology_key: Option<HashMap<String, String>>,
+    node_affinity_topology_key: Option<Vec<String>>,
     node_has_topology_key: Option<HashMap<String, String>>,
 }
 impl PublishParams {
@@ -257,7 +278,7 @@ impl PublishParams {
         &self.pool_affinity_topology_label
     }
     /// Get the `Parameters::PoolAffinityTopologyKey` value.
-    pub fn pool_affinity_topology_key(&self) -> &Option<HashMap<String, String>> {
+    pub fn pool_affinity_topology_key(&self) -> &Option<Vec<String>> {
         &self.pool_affinity_topology_key
     }
     /// Get the `Parameters::PoolHasTopologyKey` value.
@@ -269,7 +290,7 @@ impl PublishParams {
         &self.node_affinity_topology_label
     }
     /// Get the `Parameters::NodeAffinityTopologyKey` value.
-    pub fn node_affinity_topology_key(&self) -> &Option<HashMap<String, String>> {
+    pub fn node_affinity_topology_key(&self) -> &Option<Vec<String>> {
         &self.node_affinity_topology_key
     }
     /// Get the `Parameters::NodeHasTopologyKey` value.
@@ -326,7 +347,6 @@ impl TryFrom<&HashMap<String, String>> for PublishParams {
                 .map_err(|_| tonic::Status::invalid_argument("Invalid keep_alive_tmo"))?;
         let fs_id = Parameters::fs_id(args.get(Parameters::FsId.as_ref()))
             .map_err(|_| tonic::Status::invalid_argument("Invalid fs_id"))?;
-
         let pool_affinity_topology_label = Parameters::pool_affinity_topology_label(
             args.get(Parameters::PoolAffinityTopologyLabel.as_ref()),
         )
