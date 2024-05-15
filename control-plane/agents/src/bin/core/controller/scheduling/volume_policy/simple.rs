@@ -271,6 +271,7 @@ mod tests {
             capacity,
             used,
             committed: None,
+            labels: None,
         };
         let replica = Replica::default();
         let pool = PoolWrapper::new(

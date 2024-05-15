@@ -98,6 +98,8 @@ pub struct PoolState {
     pub used: u64,
     /// Total pool commitment (in bytes) which is basically the accrued size of pool replicas.
     pub committed: Option<u64>,
+    /// labels to be set on the pool
+    pub labels: Option<PoolLabel>,
 }
 
 impl From<CtrlPoolState> for models::PoolState {

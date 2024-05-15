@@ -217,6 +217,7 @@ impl From<&PoolSpec> for transport::PoolState {
             capacity: 0,
             used: 0,
             committed: None,
+            labels: pool.labels.clone(),
         }
     }
 }

@@ -64,6 +64,9 @@ message PoolState {
   uint64 used = 6;
   // total size of pool replicas
   optional uint64 committed = 7;
+  // optional labels of pool
+  optional common.StringMapValue labels = 8;
+
 }
 
 // status of the pool

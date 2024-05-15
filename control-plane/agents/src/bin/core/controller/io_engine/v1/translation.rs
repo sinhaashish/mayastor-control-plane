@@ -659,6 +659,11 @@ impl IoEngineToAgent for v1::pool::Pool {
             } else {
                 Some(self.committed)
             },
+            labels: None,
+            // labels: match pool_state.labels {
+            //     Some(labels) => Some(common::StringMapValue { value: labels }),
+            //     None => None,
+            // },
         }
     }
 }

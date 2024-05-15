@@ -91,6 +91,11 @@ impl IoEngineToAgent for v0::Pool {
             capacity: self.capacity,
             used: self.used,
             committed: None,
+            labels: None,
+            //  match self.labels {
+            //     Some(labels) => Some(labels.value),
+            //     None => None,
+            // },
         }
     }
 }

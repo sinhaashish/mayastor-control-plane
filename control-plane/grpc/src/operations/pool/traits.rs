@@ -105,6 +105,10 @@ impl TryFrom<pool::PoolState> for PoolState {
             capacity: pool_state.capacity,
             used: pool_state.used,
             committed: pool_state.committed,
+            labels: match pool_state.labels {
+                Some(labels) => Some(labels.value),
+                None => None,
+            },
         })
     }
 }
@@ -164,6 +168,10 @@ impl From<PoolState> for pool::PoolState {
             capacity: pool_state.capacity,
             used: pool_state.used,
             committed: pool_state.committed,
+            labels: match pool_state.labels {
+                Some(labels) => Some(common::StringMapValue { value: labels }),
+                None => None,
+            },
         }
     }
 }
