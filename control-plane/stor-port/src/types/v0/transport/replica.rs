@@ -411,6 +411,61 @@ impl From<Replica> for DestroyReplica {
     }
 }
 
+/// Create Replica Request at the time of creating the volumes.
+#[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CreateReplicaNew {
+    /// Id of the io-engine instance.
+    pub node: NodeId,
+    /// Name of the replica.
+    pub name: Option<ReplicaName>,
+    /// UUID of the replica.
+    pub uuid: ReplicaId,
+    /// Entity Id of the replica.
+    pub entity_id: Option<VolumeId>,
+    /// Id of the pool.
+    pub pool_id: PoolId,
+    /// UUID of the pool.
+    pub pool_uuid: Option<PoolUuid>,
+    /// Size of the replica in bytes.
+    pub size: u64,
+    /// Thin provisioning.
+    pub thin: bool,
+    /// Protocol to expose the replica over.
+    pub share: Protocol,
+    /// Managed by our control plane.
+    pub managed: bool,
+    /// Owners of the resource.
+    pub owners: ReplicaOwners,
+    /// Host nqn's allowed to connect to the target.
+    pub allowed_hosts: Vec<HostNqn>,
+    /// The replica kind, eg: regular or clone.
+    pub kind: Option<ReplicaKind>,
+    /// The replica labels.
+    pub labels: Option<String>,
+}
+
+// Implement the From trait to convert CreateReplicaNew to CreateReplica
+impl From<CreateReplicaNew> for CreateReplica {
+    fn from(new: CreateReplicaNew) -> Self {
+        CreateReplica {
+            node: new.node,
+            name: new.name,
+            uuid: new.uuid,
+            entity_id: new.entity_id,
+            pool_id: new.pool_id,
+            pool_uuid: new.pool_uuid,
+            size: new.size,
+            thin: new.thin,
+            share: new.share,
+            managed: new.managed,
+            owners: new.owners,
+            allowed_hosts: new.allowed_hosts,
+            kind: new.kind,
+        }
+    }
+}
+
 /// Create Replica Request.
 #[derive(Serialize, Deserialize, Default, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
