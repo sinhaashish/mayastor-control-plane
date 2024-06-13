@@ -763,97 +763,6 @@ impl ResourceShutdownOperations for OperationGuardArc<VolumeSpec> {
 }
 
 #[async_trait::async_trait]
-impl ResourceLifecycleExt<CreateVolume> for OperationGuardArc<VolumeSpec> {
-    type CreateOutput = Self;
-
-    async fn create_ext(
-        registry: &Registry,
-        request: &CreateVolume,
-    ) -> Result<Self::CreateOutput, SvcError> {
-        let specs = registry.specs();
-        let mut volume = specs
-            .get_or_create_volume(&CreateVolumeSource::None(request))?
-            .operation_guard_wait()
-            .await?;
-        let volume_clone = volume.start_create(registry, request).await?;
-
-        // If the volume is a part of the ag, create or update accordingly.
-        registry.specs().get_or_create_affinity_group(&volume_clone);
-
-        // todo: pick nodes and pools using the Node&Pool Topology
-        // todo: virtually increase the pool usage to avoid a race for space with concurrent calls
-        let result = create_volume_replicas(registry, request, &volume_clone).await;
-        let create_replica_candidate = volume
-            .validate_create_step_ext(registry, result, OnCreateFail::Delete)
-            .await?;
-
-        let mut replicas = Vec::<Replica>::new();
-        for replica in create_replica_candidate.candidates() {
-            if replicas.len() >= request.replicas as usize {
-                break;
-            } else if replicas.iter().any(|r| r.node == replica.node) {
-                // don't reuse the same node
-                continue;
-            }
-            let replica = if replicas.is_empty() {
-                let mut replica = replica.clone();
-                // the local replica needs to be connected via "bdev:///"
-                replica.share = Protocol::None;
-                replica
-            } else {
-                replica.clone()
-            };
-            match OperationGuardArc::<ReplicaSpec>::create(registry, &replica).await {
-                Ok(replica) => {
-                    replicas.push(replica);
-                }
-                Err(error) => {
-                    volume_clone.error(&format!(
-                        "Failed to create replica {:?} for volume, error: {}",
-                        replica,
-                        error.full_string()
-                    ));
-                    // continue trying...
-                }
-            };
-        }
-
-        // we can't fulfil the required replication factor, so let the caller
-        // decide what to do next
-        let result = if replicas.len() < request.replicas as usize {
-            for replica_state in replicas {
-                let result = match specs.replica(&replica_state.uuid).await {
-                    Ok(mut replica) => {
-                        let request = DestroyReplica::from(replica_state.clone());
-                        replica.destroy(registry, &request.with_disown_all()).await
-                    }
-                    Err(error) => Err(error),
-                };
-                if let Err(error) = result {
-                    volume_clone.error(&format!(
-                        "Failed to delete replica {:?} from volume, error: {}",
-                        replica_state,
-                        error.full_string()
-                    ));
-                }
-            }
-            Err(SvcError::ReplicaCreateNumber {
-                id: request.uuid.to_string(),
-            })
-        } else {
-            Ok(())
-        };
-
-        // we can destroy volume on error because there's no volume resource created on the nodes,
-        // only sub-resources (such as nexuses/replicas which will be garbage-collected later).
-        volume
-            .complete_create(result, registry, OnCreateFail::Delete)
-            .await?;
-        Ok(volume)
-    }
-}
-
-#[async_trait::async_trait]
 impl ResourceLifecycleExt<CreateVolumeSource<'_>> for OperationGuardArc<VolumeSpec> {
     type CreateOutput = Self;
 
@@ -888,6 +797,7 @@ impl ResourceLifecycleExt<CreateVolumeSource<'_>> for OperationGuardArc<VolumeSp
         volume
             .complete_create(result, registry, OnCreateFail::Delete)
             .await?;
+
         Ok(volume)
     }
 }
@@ -945,6 +855,7 @@ pub(super) trait CreateVolumeExe: CreateVolumeExeVal {
             Ok(replicas)
         }
     }
+
     async fn setup<'a>(&'a self, context: &mut Context<'a>) -> Result<Self::Candidates, SvcError>;
     async fn create<'a>(
         &'a self,
@@ -966,12 +877,9 @@ impl CreateVolumeExeVal for CreateVolume {
 
 #[async_trait::async_trait]
 impl CreateVolumeExe for CreateVolume {
-    type Candidates = CreateReplicaCandidate;
+    type Candidates = Vec<CreateReplicaCandidate>;
 
-    async fn setup<'a>(
-        &'a self,
-        context: &mut Context<'a>,
-    ) -> Result<CreateReplicaCandidate, SvcError> {
+    async fn setup<'a>(&'a self, context: &mut Context<'a>) -> Result<Self::Candidates, SvcError> {
         // todo: pick nodes and pools using the Node&Pool Topology
         // todo: virtually increase the pool usage to avoid a race for space with concurrent calls
         create_volume_replicas(context.registry, self, context.volume.as_ref()).await
@@ -980,49 +888,60 @@ impl CreateVolumeExe for CreateVolume {
     async fn create<'a>(
         &'a self,
         context: &mut Context<'a>,
-        candidates: CreateReplicaCandidate,
+        candidates: Self::Candidates,
     ) -> Vec<Replica> {
-        let mut replicas = Vec::<Replica>::with_capacity(candidates.candidates().len());
-        for replica in candidates.candidates() {
-            if replicas.len() >= self.replicas as usize {
-                break;
-            } else if replicas.iter().any(|r| {
-                r.node == replica.node
-                    || spread_label_is_same(r, replica, context).unwrap_or_else(|error| {
+        let mut fina_replicas = Vec::<Replica>::new();
+        for crc in candidates.iter() {
+            let mut replicas = Vec::<Replica>::with_capacity(crc.candidates().len());
+            for replica in crc.candidates() {
+                if replicas.len() >= self.replicas as usize {
+                    break;
+                } else if replicas.iter().any(|r| {
+                    r.node == replica.node
+                        || spread_label_is_same(r, replica, context).unwrap_or_else(|error| {
+                            context.volume.error(&format!(
+                                "Failed to create replica {:?} for volume, error: {}",
+                                replica,
+                                error.full_string()
+                            ));
+                            false
+                        })
+                }) {
+                    // don't re-use the same node or same exclusion labels
+                    continue;
+                }
+                let replica = if replicas.is_empty() {
+                    let mut replica = replica.clone();
+                    // the local replica needs to be connected via "bdev:///"
+                    replica.share = Protocol::None;
+                    replica
+                } else {
+                    replica.clone()
+                };
+                match OperationGuardArc::<ReplicaSpec>::create(context.registry, &replica).await {
+                    Ok(replica) => {
+                        replicas.push(replica);
+                    }
+                    Err(error) => {
                         context.volume.error(&format!(
                             "Failed to create replica {:?} for volume, error: {}",
                             replica,
                             error.full_string()
                         ));
-                        false
-                    })
-            }) {
-                // don't re-use the same node or same exclusion labels
-                continue;
+                        // continue trying...
+                    }
+                };
             }
-            let replica = if replicas.is_empty() {
-                let mut replica = replica.clone();
-                // the local replica needs to be connected via "bdev:///"
-                replica.share = Protocol::None;
-                replica
+
+            if replicas.len() < context.volume.as_ref().num_replicas as usize {
+                self.undo(context, replicas).await;
+                continue;
             } else {
-                replica.clone()
-            };
-            match OperationGuardArc::<ReplicaSpec>::create(context.registry, &replica).await {
-                Ok(replica) => {
-                    replicas.push(replica);
-                }
-                Err(error) => {
-                    context.volume.error(&format!(
-                        "Failed to create replica {:?} for volume, error: {}",
-                        replica,
-                        error.full_string()
-                    ));
-                    // continue trying...
-                }
-            };
+                fina_replicas = replicas;
+                break;
+            }
         }
-        replicas
+        fina_replicas
     }
 
     async fn undo<'a>(&'a self, context: &mut Context<'a>, replicas: Vec<Replica>) {

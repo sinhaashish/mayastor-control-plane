@@ -41,9 +41,9 @@ use stor_port::{
             SpecStatus, SpecTransaction,
         },
         transport::{
-            CreateReplica, CreateVolume, NodeBugFix, NodeId, PoolId, Protocol, Replica, ReplicaId,
-            ReplicaName, ReplicaOwners, SnapshotId, VolumeId, VolumeShareProtocol, VolumeState,
-            VolumeStatus,
+            CreateReplica, CreateReplicaNew, CreateVolume, NodeBugFix, NodeId, PoolId, Protocol,
+            Replica, ReplicaId, ReplicaName, ReplicaOwners, SnapshotId, VolumeId,
+            VolumeShareProtocol, VolumeState, VolumeStatus,
         },
     },
 };
@@ -55,6 +55,7 @@ use std::convert::From;
 pub(crate) struct CreateReplicaCandidate {
     candidates: Vec<CreateReplica>,
     _affinity_group_guard: Option<OperationGuardArc<AffinityGroupSpec>>,
+    labels: Option<String>,
 }
 
 impl CreateReplicaCandidate {
@@ -62,10 +63,12 @@ impl CreateReplicaCandidate {
     pub(crate) fn new(
         candidates: Vec<CreateReplica>,
         affinity_group_guard: Option<OperationGuardArc<AffinityGroupSpec>>,
+        labels: Option<String>,
     ) -> CreateReplicaCandidate {
         Self {
             candidates,
             _affinity_group_guard: affinity_group_guard,
+            labels,
         }
     }
     /// Get the candidates.
@@ -176,6 +179,54 @@ pub(crate) async fn nexus_attach_candidates(
 /// Return a list of appropriate requests which can be used to create a replica on a pool.
 /// This can be used when the volume's current replica count is smaller than the desired volume's
 /// replica count.
+pub(crate) async fn volume_replica_candidates_new(
+    registry: &Registry,
+    volume_spec: &VolumeSpec,
+) -> Result<Vec<Vec<CreateReplicaNew>>, SvcError> {
+    let request = GetSuitablePools::new(volume_spec, None);
+    let mut vec_create_replicas: Vec<Vec<CreateReplicaNew>> = Vec::new();
+    let set_of_pools = scheduling::volume_pool_candidates_new(request.clone(), registry).await;
+
+    for pools in set_of_pools.iter() {
+        if pools.is_empty() {
+            return Err(SvcError::NotEnoughResources {
+                source: NotEnough::OfPools { have: 0, need: 1 },
+            });
+        }
+        volume_spec.trace(&format!(
+            "Creation pool candidates for volume: {:?}",
+            pools.iter().map(|p| p.state()).collect::<Vec<_>>()
+        ));
+        let crete_replicas = pools
+            .iter()
+            .map(|p| {
+                let replica_uuid = ReplicaId::new();
+                CreateReplicaNew {
+                    node: p.node.clone(),
+                    name: Some(ReplicaName::new(&replica_uuid, Some(&request.uuid))),
+                    uuid: replica_uuid,
+                    entity_id: Some(volume_spec.uuid.clone()),
+                    pool_id: p.id.clone(),
+                    pool_uuid: None,
+                    size: request.size,
+                    thin: request.as_thin(),
+                    share: Protocol::None,
+                    managed: true,
+                    owners: ReplicaOwners::from_volume(&request.uuid),
+                    allowed_hosts: vec![],
+                    kind: None,
+                    labels: p.labels().cloned(),
+                }
+            })
+            .collect::<Vec<_>>();
+        vec_create_replicas.push(crete_replicas);
+    }
+    Ok(vec_create_replicas)
+}
+
+/// Return a list of appropriate requests which can be used to create a replica on a pool.
+/// This can be used when the volume's current replica count is smaller than the desired volume's
+/// replica count.
 pub(crate) async fn volume_replica_candidates(
     registry: &Registry,
     volume_spec: &VolumeSpec,
@@ -271,13 +322,7 @@ pub(crate) async fn create_volume_replicas(
     registry: &Registry,
     request: &CreateVolume,
     volume: &VolumeSpec,
-) -> Result<CreateReplicaCandidate, SvcError> {
-    // Create a ag guard to prevent candidate collision.
-    let ag_guard = match registry.specs().get_or_create_affinity_group(volume) {
-        Some(ag) => Some(ag.operation_guard_wait().await?),
-        _ => None,
-    };
-
+) -> Result<Vec<CreateReplicaCandidate>, SvcError> {
     if !request.allowed_nodes().is_empty()
         && request.replicas > request.allowed_nodes().len() as u64
     {
@@ -285,16 +330,38 @@ pub(crate) async fn create_volume_replicas(
         return Err(SvcError::InvalidArguments {});
     }
 
-    let node_replicas = volume_replica_candidates(registry, volume).await?;
+    let mut vec_create_replica_candidate: Vec<CreateReplicaCandidate> = Vec::new();
 
-    if request.replicas > node_replicas.len() as u64 {
-        Err(SvcError::from(NotEnough::OfPools {
-            have: node_replicas.len() as u64,
+    let node_replicas_vec = volume_replica_candidates_new(registry, volume).await?;
+
+    // The first element of the node_replicas_vec contains the most suitable replicas.
+    // Error out if the first element node_replicas_vec doesn't have enough replicas.
+    if request.replicas > node_replicas_vec[0].len() as u64 {
+        return Err(SvcError::from(NotEnough::OfPools {
+            have: node_replicas_vec[0].len() as u64,
             need: request.replicas,
-        }))
-    } else {
-        Ok(CreateReplicaCandidate::new(node_replicas, ag_guard))
+        }));
     }
+
+    for node_replicas in node_replicas_vec.iter() {
+        // Create a ag guard to prevent candidate collision.
+        let ag_guard = match registry.specs().get_or_create_affinity_group(volume) {
+            Some(ag) => Some(ag.operation_guard_wait().await?),
+            _ => None,
+        };
+
+        let replicas: Vec<CreateReplica> = node_replicas
+            .iter()
+            .map(|new| (*new).clone().into())
+            .collect();
+
+        vec_create_replica_candidate.push(CreateReplicaCandidate::new(
+            replicas.to_owned(),
+            ag_guard,
+            node_replicas[0].labels.clone(),
+        ));
+    }
+    Ok(vec_create_replica_candidate)
 }
 
 /// Get all usable healthy replicas for volume nexus creation.

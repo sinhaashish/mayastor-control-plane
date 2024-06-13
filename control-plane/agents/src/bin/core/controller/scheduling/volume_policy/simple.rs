@@ -281,6 +281,7 @@ mod tests {
                 .cycle()
                 .take(replicas)
                 .collect::<Vec<_>>(),
+            None,
         );
         PoolItem::new(node_state, pool, ag_replica_count)
     }
