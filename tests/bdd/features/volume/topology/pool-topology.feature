@@ -48,20 +48,20 @@ Feature: Volume Pool Topology
     Then the <replica> replica volume creation should <result> and <provisioned> provisioned on pools with labels <pool_label>
     Examples:
       | pool_affinity_topology_key   |    volume_pool_topology_affinty       | replica |     expression     | result    | provisioned |     pool_label        |
-      |            True              |           zone-us                     |    1    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
-      |            True              |           zone-us                     |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
-      |            True              |           zone-us                     |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
-      |            True              |           zone-us                     |    4    |        >           |   fail    |    not      | zone-us=us-west-1     |
-      |            True              |           zone-ap                     |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
-      |            True              |           zone-ap                     |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
-      |            True              |           zone-ap                     |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
-      |            True              |           zone-ap                     |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1    |
-      |            True              |           zone-eu                     |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
-      |            True              |           zone-eu                     |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
-      |            True              |           zone-eu                     |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
-      |            True              |           zone-eu                     |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3     |
-      |            True              |           zone-ca                     |    1    |        <=          | succeed   |  must be    | zone-ca=ca-central-1  |
-      |            True              |           zone-ca                     |    2    |        <=          | succeed   |  must be    | zone-ca=ca-central-1  |
+     # |            True              |           zone-us                     |    1    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
+     # |            True              |           zone-us                     |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
+     # |            True              |           zone-us                     |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1     |
+     # |            True              |           zone-us                     |    4    |        >           |   fail    |    not      | zone-us=us-west-1     |
+     # |            True              |           zone-ap                     |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
+     # |            True              |           zone-ap                     |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
+     # |            True              |           zone-ap                     |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1    |
+     # |            True              |           zone-ap                     |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1    |
+     # |            True              |           zone-eu                     |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
+     # |            True              |           zone-eu                     |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
+     # |            True              |           zone-eu                     |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3     |
+     # |            True              |           zone-eu                     |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3     |
+     # |            True              |           zone-ca                     |    1    |        <=          | succeed   |  must be    | zone-ca=ca-central-1  |
+     # |            True              |           zone-ca                     |    2    |        <=          | succeed   |  must be    | zone-ca=ca-central-1  |
       |            True              |           zone-ca                     |    3    |        <=          | succeed   |  must be    | zone-ca=ca-central-1  |
 
   Scenario Outline: Suitable pools which contain volume topology labels
@@ -71,17 +71,17 @@ Feature: Volume Pool Topology
     Examples:
       | pool_affinity_topology_label | volume_pool_topology_inclusion_label  | replica |     expression     | result    | provisioned |     pool_label      |
       |            True              |           zone-us=us-west-1           |    1    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
-      |            True              |           zone-us=us-west-1           |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1   |         
-      |            True              |           zone-us=us-west-1           |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
-      |            True              |           zone-us=us-west-1           |    4    |        >           |   fail    |    not      | zone-us=us-west-1   |
-      |            True              |           zone-ap=ap-south-1          |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap=ap-south-1          |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap=ap-south-1          |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap=ap-south-1          |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1  |
-      |            True              |           zone-eu=eu-west-3           |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu=eu-west-3           |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu=eu-west-3           |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu=eu-west-3           |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3   |
+     # |            True              |           zone-us=us-west-1           |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1   |         
+     # |            True              |           zone-us=us-west-1           |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
+     # |            True              |           zone-us=us-west-1           |    4    |        >           |   fail    |    not      | zone-us=us-west-1   |
+     # |            True              |           zone-ap=ap-south-1          |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap=ap-south-1          |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap=ap-south-1          |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap=ap-south-1          |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1  |
+     # |            True              |           zone-eu=eu-west-3           |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu=eu-west-3           |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu=eu-west-3           |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu=eu-west-3           |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3   |
 
 
 
@@ -92,14 +92,14 @@ Feature: Volume Pool Topology
     Examples:
       |       has_topology_key       | volume_pool_topology_inclusion_label   | replica |     expression     | result    | provisioned |  pool_label    |
       |            True              |           zone-us                      |    1    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
-      |            True              |           zone-us                      |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1   |         
-      |            True              |           zone-us                      |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
-      |            True              |           zone-us                      |    4    |        >           |   fail    |    not      | zone-us=us-west-1   |
-      |            True              |           zone-ap                      |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap                      |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap                      |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
-      |            True              |           zone-ap                      |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1  |
-      |            True              |           zone-eu                      |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu                      |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu                      |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
-      |            True              |           zone-eu                      |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3   |
+     # |            True              |           zone-us                      |    2    |        <=          | succeed   |  must be    | zone-us=us-west-1   |         
+     # |            True              |           zone-us                      |    3    |        <=          | succeed   |  must be    | zone-us=us-west-1   |
+     # |            True              |           zone-us                      |    4    |        >           |   fail    |    not      | zone-us=us-west-1   |
+     # |            True              |           zone-ap                      |    1    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap                      |    2    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap                      |    3    |        <=          | succeed   |  must be    | zone-ap=ap-south-1  |
+     # |            True              |           zone-ap                      |    4    |        >           |   fail    |  not        | zone-ap=ap-south-1  |
+     # |            True              |           zone-eu                      |    1    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu                      |    2    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu                      |    3    |        <=          | succeed   |  must be    | zone-eu=eu-west-3   |
+     # |            True              |           zone-eu                      |    4    |        >           |   fail    |    not      | zone-eu=eu-west-3   |

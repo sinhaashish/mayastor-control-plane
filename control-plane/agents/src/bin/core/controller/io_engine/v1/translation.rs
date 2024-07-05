@@ -128,6 +128,7 @@ impl TryIoEngineToAgent for v1::replica::Replica {
             } else {
                 ReplicaKind::Regular
             },
+            labels: None,
         })
     }
 }

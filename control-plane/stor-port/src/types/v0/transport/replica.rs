@@ -90,6 +90,8 @@ pub struct Replica {
     pub allowed_hosts: Vec<HostNqn>,
     /// Type of replica, example regular or snapshot.
     pub kind: ReplicaKind,
+    /// Labels for the replica.
+    pub labels: Option<String>,
 }
 impl Replica {
     /// Check if the replica is online.

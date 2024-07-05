@@ -1,7 +1,7 @@
 use crate::controller::{registry::Registry, resources::OperationGuardArc};
 use agents::errors::SvcError;
 use std::collections::HashMap;
-use stor_port::types::v0::store::volume::VolumeSpec;
+use stor_port::types::v0::store::volume::{VolumeCreateInfo, VolumeSpec};
 
 /// Resource Cordon Operations.
 #[async_trait::async_trait]

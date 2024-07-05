@@ -25,6 +25,7 @@ use crate::{
         },
     },
 };
+
 use agents::errors::SvcError;
 use stor_port::{
     transport_api::ErrorChain,
@@ -32,7 +33,9 @@ use stor_port::{
         store::{
             nexus_persistence::NexusInfoKey,
             replica::ReplicaSpec,
-            volume::{PublishOperation, RepublishOperation, VolumeOperation, VolumeSpec},
+            volume::{
+                PublishOperation, RepublishOperation, VolumeCreateInfo, VolumeOperation, VolumeSpec,
+            },
         },
         transport::{
             CreateReplica, CreateVolume, DestroyNexus, DestroyReplica, DestroyShutdownTargets,
@@ -776,8 +779,15 @@ impl ResourceLifecycleExt<CreateVolumeSource<'_>> for OperationGuardArc<VolumeSp
             .get_or_create_volume(request_src)?
             .operation_guard_wait()
             .await?;
+        // let volume_clone = volume
+        //     .start_create_update(registry, request_src.source())
+        //     .await?;
+        //let prepare_snapshot = snapshot.snapshot_params(&replicas)?;
+
+        let completer = Arc::new(Mutex::new(None)); 
+
         let volume_clone = volume
-            .start_create_update(registry, request_src.source())
+            .start_create_update(registry, VolumeCreateInfo::new( request_src.source(), completer.clone()))
             .await?;
 
         // If the volume is a part of the ag, create or update accordingly.
@@ -792,6 +802,7 @@ impl ResourceLifecycleExt<CreateVolumeSource<'_>> for OperationGuardArc<VolumeSp
             CreateVolumeSource::Snapshot(params) => params.run(context).await,
         };
 
+        println!(" ashish result: {:?}", result);
         // we can destroy volume on error because there's no volume resource created on the nodes,
         // only sub-resources (such as nexuses/replicas which will be garbage-collected later).
         volume
@@ -893,6 +904,7 @@ impl CreateVolumeExe for CreateVolume {
         let mut fina_replicas = Vec::<Replica>::new();
         for crc in candidates.iter() {
             let mut replicas = Vec::<Replica>::with_capacity(crc.candidates().len());
+            let labels = crc.labels();
             for replica in crc.candidates() {
                 if replicas.len() >= self.replicas as usize {
                     break;
@@ -919,7 +931,8 @@ impl CreateVolumeExe for CreateVolume {
                     replica.clone()
                 };
                 match OperationGuardArc::<ReplicaSpec>::create(context.registry, &replica).await {
-                    Ok(replica) => {
+                    Ok(mut replica) => {
+                        replica.labels = labels.clone();
                         replicas.push(replica);
                     }
                     Err(error) => {

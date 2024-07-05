@@ -16,9 +16,12 @@ use crate::{
     IntoOption,
 };
 
+use std::{collections::HashMap, sync::Arc};
+
+use chrono::{DateTime, Utc};
+use prost_types::Option;
 use pstor::ApiVersion;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 /// Key used by the store to uniquely identify a VolumeState structure.
 pub struct VolumeStateKey(VolumeId);
@@ -467,8 +470,15 @@ impl SpecTransaction<VolumeOperation> for VolumeSpec {
                 VolumeOperation::Destroy => {
                     self.status = SpecStatus::Deleted;
                 }
-                VolumeOperation::Create => {
-                    self.status = SpecStatus::Created(transport::VolumeStatus::Online);
+                VolumeOperation::Create(info) => {
+                    if let Some(result) = info.complete.lock().unwrap().as_ref() {
+                        self.topology = info.volume.topology.clone();
+                        self.status = SpecStatus::Created(transport::VolumeStatus::Online);
+                    } else {
+                        // means we've restarted with the op in progress... and the snapshot was not
+                        // successful!
+                        tracing::error!(?self, "Snapshot Create completion without the result");
+                    }
                 }
                 VolumeOperation::Share(share) => {
                     if let Some(target) = self.target_mut() {
@@ -566,8 +576,10 @@ impl SpecTransaction<VolumeOperation> for VolumeSpec {
 
 /// Available Volume Operations.
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum VolumeOperation {
-    Create,
+    Create(VolumeCreateInfo),
+    //Create,
     Destroy,
     Share(VolumeShareProtocol),
     Unshare,
@@ -583,6 +595,43 @@ pub enum VolumeOperation {
     DestroySnapshot(SnapshotId),
     Resize(u64),
     SetVolumeProperty(VolumeProperty),
+}
+
+/// Completion info for volume snapshot create operation.
+pub type VolumeCreateCompleter = Arc<std::sync::Mutex<Option<VolumeCreateResult>>>;
+
+/// The replica snapshot created from the creation operation.
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct VolumeCreateResult {
+    labels: HashMap<String, String>
+
+}
+
+/// Volume create information, used to set the volume's replicas and the pool labels.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct VolumeCreateInfo {
+
+    volume: CreateVolume,
+    #[serde(skip, default)]
+    complete: VolumeCreateCompleter,
+}
+impl VolumeCreateInfo {
+    /// Get a new `Self` from the given parameters.
+    pub fn new(
+        volume: CreateVolume,
+        complete: &VolumeCreateCompleter,
+    ) -> Self {
+        Self {
+            volume: volume,
+            complete: complete.clone(),
+        }
+    }
+}
+
+impl PartialEq for VolumeCreateInfo {
+    fn eq(&self, other: &Self) -> bool {
+        true
+    }
 }
 
 #[test]
@@ -663,7 +712,7 @@ impl RepublishOperation {
 impl From<VolumeOperation> for models::volume_spec_operation::Operation {
     fn from(src: VolumeOperation) -> Self {
         match src {
-            VolumeOperation::Create => models::volume_spec_operation::Operation::Create,
+            VolumeOperation::Create(_) => models::volume_spec_operation::Operation::Create,
             VolumeOperation::Destroy => models::volume_spec_operation::Operation::Destroy,
             VolumeOperation::Share(_) => models::volume_spec_operation::Operation::Share,
             VolumeOperation::Unshare => models::volume_spec_operation::Operation::Unshare,

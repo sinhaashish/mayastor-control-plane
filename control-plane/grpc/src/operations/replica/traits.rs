@@ -178,6 +178,7 @@ impl TryFrom<replica::Replica> for Replica {
             kind: replica::ReplicaKind::try_from(replica.kind)
                 .unwrap_or_default()
                 .into(),
+            labels: None,
         })
     }
 }

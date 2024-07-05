@@ -75,6 +75,11 @@ impl CreateReplicaCandidate {
     pub(crate) fn candidates(&self) -> &Vec<CreateReplica> {
         &self.candidates
     }
+
+    /// Get the labels.
+    pub fn labels(&self) -> &Option<String> {
+        &self.labels
+    }
 }
 
 /// NexusNodeCandidate for nexus node selection.
@@ -1195,7 +1200,7 @@ impl SpecOperationsHelper for VolumeSpec {
                     }
                 }
             }
-            VolumeOperation::Create => unreachable!(),
+            VolumeOperation::Create(_) => unreachable!(),
             VolumeOperation::Destroy => unreachable!(),
             VolumeOperation::CreateSnapshot(_) => Ok(()),
             VolumeOperation::DestroySnapshot(_) => Ok(()),
@@ -1205,8 +1210,8 @@ impl SpecOperationsHelper for VolumeSpec {
         self.start_op(operation);
         Ok(())
     }
-    fn start_create_op(&mut self, _request: &Self::Create) {
-        self.start_op(VolumeOperation::Create);
+    fn start_create_op(&mut self, request: &Self::Create) {
+        self.start_op(VolumeOperation::Create(request.clone()));
     }
     fn start_destroy_op(&mut self) {
         self.start_op(VolumeOperation::Destroy);
