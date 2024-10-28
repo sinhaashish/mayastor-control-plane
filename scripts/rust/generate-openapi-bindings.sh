@@ -129,7 +129,7 @@ write_version
 
 if [[ "$skip_if_md5_same" = "yes" ]]; then
   source_md5sum=$(cd "$tmpd"; find . -type f \( ! -name "build.rs" \) -exec md5sum {} \; | md5sum)
-  target_md5sum=$(cd "$TARGET"; find . -type f \( ! -name "build.rs" ! -name "lib.rs" ! -name "version.txt" \) -exec md5sum {} \; | md5sum)
+  target_md5sum=$(cd "$TARGET"; find . -type f \( ! -name "build.rs" ! -name "lib.rs" ! -name "version.txt" \) -not \( -path "./templates/*" -prune \) -exec md5sum {} \; | md5sum)
 
   [[ "$target_md5sum" = "$source_md5sum" ]] && exit 0
 fi
@@ -145,7 +145,7 @@ fi
 
 mv "$TARGET/src/lib.rs" "$tmpd/src/lib.rs"
 if [ "$GIT_FAILED" = "true" ]; then
-  for dir in $(find "$TARGET" -maxdepth 1 -mindepth 1 -type d); do
+  for dir in $(find "$TARGET" -maxdepth 1 -mindepth 1 -type d -not \( -path "$TARGET/templates" \)); do
     rm -r $dir
   done
 fi
