@@ -33,6 +33,7 @@ mkShell {
     jq
     llvmPackages.libclang
     nixpkgs-fmt
+    nix
     openapi-generator-cli
     openssl
     pkg-config

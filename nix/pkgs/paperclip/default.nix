@@ -10,7 +10,7 @@ pkgs.stdenv.mkDerivation {
   src = pkgs.fetchurl {
     name = "paperclip-${src_json.rev}.tar.gz";
     url = "https://github.com/${src_json.owner}/${src_json.repo}/releases/download/${src_json.rev}/paperclip-${hostPlatform}.tar.gz";
-    sha256 = src_json.hash;
+    sha256 = src_json.hash.${hostPlatform};
   };
 
   sourceRoot = ".";
@@ -24,5 +24,6 @@ pkgs.stdenv.mkDerivation {
   meta = with lib; {
     homepage = "https://github.com/${src_json.owner}/${src_json.repo}";
     description = "OpenApi v3 Generator";
+    platforms = platforms.linux ++ platforms.darwin;
   };
 }
