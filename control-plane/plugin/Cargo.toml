@@ -14,12 +14,13 @@ path = "./src/lib.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-default = [ "rls" ]
-rls = [ "openapi/tower-client-rls" ]
-tls = [ "openapi/tower-client-tls" ]
+default = ["rls"]
+rls = ["openapi/tower-client-rls"]
+tls = ["openapi/tower-client-tls"]
 
 [dependencies]
-openapi = { path = "../../openapi", default-features = false, features = [ "tower-trace" ] }
+tracing = "0.1.40"
+openapi = { path = "../../openapi", default-features = false, features = ["tower-trace"] }
 utils = { path = "../../utils/utils-lib" }
 strum = "0.26.3"
 strum_macros = "0.26.4"

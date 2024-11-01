@@ -2,7 +2,6 @@
 name = "rest"
 description = "Control plane REST server"
 version = "1.0.0"
-authors = ["Tiago Castro <tiago.castro@mayadata.io>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -17,12 +16,12 @@ path = "./src/lib.rs"
 
 [dependencies]
 # Actix Server, telemetry
-rustls = "0.21.12"
-rustls-pemfile = "1.0.3"
-actix-web = { version = "4.4.0", features = ["rustls-0_21"] }
+rustls = { version = "0.23.16" }
+rustls-pemfile = "2.2.0"
+actix-web = { version = "4.9.0", features = ["rustls-0_23"] }
 actix-service = "2.0.2"
-opentelemetry = { version = "0.22.0" }
-actix-web-opentelemetry = "0.17.0"
+opentelemetry = { version = "0.26.0" }
+tracing-actix-web = { version = "0.7.14", features = ["opentelemetry_0_26"] }
 tracing = "0.1.40"
 once_cell = "1.20.2"
 async-trait = "0.1.83"
@@ -33,7 +32,7 @@ futures = "0.3.31"
 anyhow = "1.0.92"
 snafu = "0.8.5"
 url = "2.5.2"
-http = "0.2.9"
+http = "1.1.0"
 tinytemplate = "1.2.1"
 jsonwebtoken = "9.3.0"
 stor-port = { path = "../stor-port" }

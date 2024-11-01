@@ -162,7 +162,6 @@ impl TryIoEngineToAgent for v1::snapshot::NexusCreateSnapshotResponse {
             nexus,
             snap_time: self
                 .snapshot_timestamp
-                .clone()
                 .and_then(|t| std::time::SystemTime::try_from(t).ok())
                 .unwrap_or(UNIX_EPOCH),
             replicas_status: self
@@ -238,7 +237,6 @@ impl TryIoEngineToAgent for v1::snapshot::SnapshotInfo {
             self.snapshot_size,
             self.num_clones,
             self.timestamp
-                .clone()
                 .and_then(|t| std::time::SystemTime::try_from(t).ok())
                 .unwrap_or(UNIX_EPOCH),
             replica_uuid,
@@ -438,7 +436,6 @@ impl IoEngineToAgent for v1::nexus::Child {
                 .unwrap_or(ChildStateReason::Unknown),
             faulted_at: self
                 .fault_timestamp
-                .clone()
                 .and_then(|t| std::time::SystemTime::try_from(t).ok()),
             has_io_log: Some(self.has_io_log),
         }

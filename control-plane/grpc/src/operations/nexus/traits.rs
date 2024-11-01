@@ -854,7 +854,7 @@ impl ValidateRequestTypes for CreateNexusRequest {
                 Some(owner) => Some(VolumeId::try_from(StringValue(Some(owner)))?),
                 None => None,
             },
-            config: match self.config.clone() {
+            config: match self.config {
                 Some(config) => Some(NexusNvmfConfig::try_from(config)?),
                 None => None,
             },

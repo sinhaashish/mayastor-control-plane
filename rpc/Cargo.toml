@@ -4,15 +4,15 @@ version = "1.0.0"
 edition = "2021"
 
 [build-dependencies]
-tonic-build = "0.10.2"
-prost-build = "0.12.1"
+tonic-build = "0.12.3"
+prost-build = "0.13.3"
 
 [dependencies]
-tonic = "0.10.2"
+tonic = "0.12.3"
 bytes = "1.8.0"
-prost = "0.12.1"
-prost-derive = "0.12.1"
-prost-types = "0.12.1"
+prost = "0.13.3"
+prost-derive = "0.13.3"
+prost-types = "0.13.3"
 serde = { version = "1.0.214", features = ["derive"] }
 serde_derive = "1.0.214"
 serde_json = "1.0.132"

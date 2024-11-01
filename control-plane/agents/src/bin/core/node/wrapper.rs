@@ -959,10 +959,8 @@ impl NodeStateFetcher {
         &self,
         client: &mut GrpcClient,
     ) -> Result<RebuildHistoryState, SvcError> {
-        let request = ListRebuildRecord::new(
-            Some(MAX_HISTORY_PER_NEXUS),
-            self.rebuild_since_timestamp.clone(),
-        );
+        let request =
+            ListRebuildRecord::new(Some(MAX_HISTORY_PER_NEXUS), self.rebuild_since_timestamp);
         let history = client.list_rebuild_record(&request).await?;
         Ok(RebuildHistoryState {
             max_entries: MAX_HISTORY_PER_NEXUS,

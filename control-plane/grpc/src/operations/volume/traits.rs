@@ -969,7 +969,7 @@ impl CreateVolumeInfo for ValidatedCreateVolumeRequest {
     }
 
     fn policy(&self) -> VolumePolicy {
-        match self.inner.policy.clone() {
+        match self.inner.policy {
             Some(policy) => policy.into(),
             None => VolumePolicy::default(),
         }

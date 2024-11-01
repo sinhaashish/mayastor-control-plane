@@ -241,7 +241,7 @@ impl ResourceStates {
 
     /// Get a rebuild history with the given ID.
     pub(crate) fn rebuild_history_time(&self) -> Option<prost_types::Timestamp> {
-        self.rebuild_history_since.clone()
+        self.rebuild_history_since
     }
 
     /// Clear all state information.

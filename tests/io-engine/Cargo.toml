@@ -1,7 +1,7 @@
 [package]
 name = "io-engine-tests"
 version = "1.0.0"
-authors = ["Tiago Castro <tiago.castro@mayadata.io>"]
+
 edition = "2018"
 description = "Control Plane 'Compose' Tests"
 
@@ -13,7 +13,7 @@ path = "src/lib.rs"
 
 [dev-dependencies]
 tokio = { version = "1.41.0", features = ["full"] }
-openapi = { path = "../../openapi", features = [ "tower-client", "tower-trace" ] }
+openapi = { path = "../../openapi", features = ["tower-client", "tower-trace"] }
 deployer-cluster = { path = "../../utils/deployer-cluster" }
 stor-port = { path = "../../control-plane/stor-port" }
 rpc = { path = "../../rpc" }

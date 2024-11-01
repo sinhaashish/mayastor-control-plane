@@ -3,18 +3,17 @@ name = "pstor-usage"
 description = "Persistent Storage Usage"
 version = "0.1.0"
 edition = "2021"
-authors = ["Tiago Castro <tiago.castro@mayadata.io>"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 tokio = { version = "1.41.0", features = ["full"] }
-openapi = { path = "../../openapi", default-features = false, features = [ "tower-client", "tower-trace" ] }
+openapi = { path = "../../openapi", default-features = false, features = ["tower-client", "tower-trace"] }
 deployer-cluster = { path = "../../utils/deployer-cluster" }
 utils = { path = "../utils-lib" }
 anyhow = "1.0.92"
 clap = { version = "4.5.20", features = ["color", "derive", "env", "string"] }
-parse-size = { version = "1.1.0", features = [ "std" ] }
+parse-size = { version = "1.1.0", features = ["std"] }
 async-trait = "0.1.83"
 etcd-client = "0.14.0"
 prettytable-rs = "0.10.0"
