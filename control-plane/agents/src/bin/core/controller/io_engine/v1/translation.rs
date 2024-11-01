@@ -198,7 +198,7 @@ impl TryIoEngineToAgent for v1::snapshot::NexusCreateSnapshotReplicaStatus {
             })?,
             error: match self.status_code {
                 0 => None,
-                errno => Some(nix::errno::Errno::from_i32(errno as i32)),
+                errno => Some(nix::errno::Errno::from_raw(errno as i32)),
             },
         })
     }
