@@ -293,10 +293,10 @@ impl TryFrom<volume::VolumeDefinition> for VolumeSpec {
                             err.to_string(),
                         )
                     })?;
-                    let frontend = match volume_meta.target_config.and_then(|c| c.frontend) {
-                        None => Default::default(),
-                        Some(frontend) => frontend,
-                    };
+                    let frontend = volume_meta
+                        .target_config
+                        .and_then(|c| c.frontend)
+                        .unwrap_or_default();
 
                     Some(TargetConfig::new(
                         target,
@@ -453,6 +453,7 @@ impl TryFrom<volume::ReplicaTopology> for ReplicaTopology {
     fn try_from(topology: volume::ReplicaTopology) -> Result<Self, Self::Error> {
         let node = topology.node.map(|node| node.into());
         let pool = topology.pool.map(|pool| pool.into());
+        #[allow(clippy::unnecessary_fallible_conversions)]
         let status = match ReplicaStatus::try_from(topology.status) {
             Ok(status) => status,
             Err(err) => {

@@ -263,7 +263,7 @@ impl Cluster {
                 .get(Filter::Node(node_id.clone()), true, None)
                 .await
                 .expect("Cant get node object");
-            if let Some(node) = node.0.get(0) {
+            if let Some(node) = node.0.first() {
                 if node.state().map(|n| &n.status) == Some(&status) {
                     return Ok(());
                 }

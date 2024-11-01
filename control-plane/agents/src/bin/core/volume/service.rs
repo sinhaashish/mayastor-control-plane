@@ -619,9 +619,8 @@ impl Service {
         let current = *self.capacity_limit_borrow.read();
         self.specs()
             .check_capacity_limit_for_resize(limit, current)
-            .map_err(|e| {
+            .inspect_err(|_| {
                 *self.capacity_limit_borrow.write() -= required;
-                e
             })?;
 
         let resize_ret = volume.resize(&self.registry, request).await;

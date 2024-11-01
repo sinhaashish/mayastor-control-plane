@@ -668,6 +668,7 @@ impl TryFrom<VolumeSnapshot> for volume::VolumeSnapshot {
                                         name: state.snap_name().to_string(),
                                         entity_id: state.entity_id().to_string(),
                                         status: crate::snapshot::SnapshotStatus::Online as i32,
+                                        #[allow(clippy::unnecessary_fallible_conversions)]
                                         timestamp: state.timestamp().try_into().ok(),
                                         replica_size: state.replica_size(),
                                         allocated_size: state.allocated_size(),

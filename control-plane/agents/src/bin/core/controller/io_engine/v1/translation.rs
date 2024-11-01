@@ -52,7 +52,7 @@ impl IoEngineToAgent for v1::host::Filesystem {
             fstype: self.fstype.clone(),
             label: self.label.clone(),
             uuid: self.uuid.clone(),
-            mountpoint: self.mountpoints.get(0).cloned().unwrap_or_default(),
+            mountpoint: self.mountpoints.first().cloned().unwrap_or_default(),
         }
     }
 }
@@ -743,8 +743,10 @@ impl TryFrom<ExternalType<v1::nexus::RebuildHistoryRecord>> for transport::Rebui
     type Error = SvcError;
     fn try_from(value: ExternalType<v1::nexus::RebuildHistoryRecord>) -> Result<Self, Self::Error> {
         Ok(Self {
+            #[allow(clippy::unnecessary_fallible_conversions)]
             child_uri: transport::ChildUri::try_from(value.0.child_uri)
                 .map_err(|_| SvcError::InvalidArguments {})?,
+            #[allow(clippy::unnecessary_fallible_conversions)]
             src_uri: transport::ChildUri::try_from(value.0.src_uri)
                 .map_err(|_| SvcError::InvalidArguments {})?,
             state: v1::nexus::RebuildJobState::try_from(value.0.state)

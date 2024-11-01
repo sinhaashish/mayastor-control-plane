@@ -125,6 +125,7 @@ impl ResourceStates {
     }
 
     /// Returns an iterator of pool states.
+    #[allow(unused)]
     pub(crate) fn pool_states(&self) -> Values<PoolId, Resource<PoolState>> {
         self.pools.values()
     }
