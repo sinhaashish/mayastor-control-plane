@@ -10,6 +10,7 @@ from retrying import retry
 from common.deployer import Deployer
 from common.apiclient import ApiClient
 from common.docker import Docker
+from common.operations import Cluster
 
 from openapi.model.create_pool_body import CreatePoolBody
 from openapi.model.create_volume_body import CreateVolumeBody
@@ -133,7 +134,8 @@ def a_successfully_created_snapshot(volume):
     """a successfully created snapshot."""
     put_snapshot(volume)
     yield
-    del_snapshot()
+    if Cluster.fixture_cleanup():
+        del_snapshot()
 
 
 @given("the node A is paused")
@@ -176,8 +178,9 @@ def we_have_a_multireplica_volume(disks):
     )
     put_volume(2)
     yield
-    del_volume()
-    del_remote_pool()
+    if Cluster.fixture_cleanup():
+        del_volume()
+        del_remote_pool()
 
 
 @given(
@@ -191,7 +194,8 @@ def we_have_a_single_replica_publish_status_volume_where_the_replica_is_replica_
     """we have a single replica <publish_status> volume where the replica is <replica_location> to the target."""
     put_volume(1, publish_status, replica_location)
     yield
-    del_volume()
+    if Cluster.fixture_cleanup():
+        del_volume()
 
 
 @given("we have a single replica volume")
@@ -199,7 +203,8 @@ def we_have_a_single_replica_volume():
     """we have a single replica volume."""
     put_volume(1)
     yield
-    del_volume()
+    if Cluster.fixture_cleanup():
+        del_volume()
 
 
 @given("we have a single replica volume with replica on node A")
@@ -207,7 +212,8 @@ def we_have_a_single_replica_volume_with_replica_on_node_a():
     """we have a single replica volume with replica on node A."""
     put_volume(1, "published", "remote")
     yield
-    del_volume()
+    if Cluster.fixture_cleanup():
+        del_volume()
 
 
 @when("a snapshot is created for the volume")
@@ -215,7 +221,8 @@ def a_snapshot_is_created_for_the_volume(volume):
     """a snapshot is created for the volume."""
     put_snapshot(volume)
     yield
-    del_snapshot()
+    if Cluster.fixture_cleanup():
+        del_snapshot()
 
 
 @when("the node A is brought back")
@@ -243,14 +250,11 @@ def we_bring_down_the_node_hosting_the_snapshot(bring_down, snapshot_node):
         Docker.stop_container(snapshot_node)
     if bring_down == "kill":
         Docker.kill_container(snapshot_node)
+    if bring_down == "bring up":
+        restart_node(snapshot_node)
     yield
-    restart_node(snapshot_node)
-
-
-@when("we bring up the node hosting the snapshot")
-def we_bring_up_the_node_hosting_the_snapshot(snapshot_node):
-    """we bring up the node hosting the snapshot."""
-    restart_node(snapshot_node)
+    if bring_down != "bring up":
+        restart_node(snapshot_node)
 
 
 @then("we delete the source volume")
@@ -534,7 +538,7 @@ def wait_snapshot_state(snapshot, state):
     snapshot = ApiClient.snapshots_api().get_volumes_snapshot(snapshot.state.uuid)
     assert len(snapshot.state.replica_snapshots) == 1
     replica_snapshot = snapshot.state.replica_snapshots[0]
-    assert hasattr(replica_snapshot, state)
+    assert hasattr(replica_snapshot, state), f"state: {state}"
 
 
 @retry(wait_fixed=100, stop_max_attempt_number=20)

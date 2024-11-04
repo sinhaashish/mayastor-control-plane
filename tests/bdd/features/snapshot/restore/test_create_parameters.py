@@ -101,28 +101,32 @@ def a_valid_snapshot_of_a_single_replica_volume():
     ApiClient.volumes_api().del_volume(VOLUME_UUID)
 
 
-@when("the request is for a multi-replica volume", target_fixture="request")
+@when("the request is for a multi-replica volume", target_fixture="le_request")
 def the_request_is_for_a_multireplica_volume(base_request):
     """the request is for a multi-replica volume."""
     base_request.replicas = 2
     yield base_request
 
 
-@when("the request is for a thick volume", target_fixture="request")
+@when("the request is for a thick volume", target_fixture="le_request")
 def the_request_is_for_a_thick_volume(base_request):
     """the request is for a thick volume."""
     base_request.thin = False
     yield base_request
 
 
-@when("the requested capacity is greater than the snapshot", target_fixture="request")
+@when(
+    "the requested capacity is greater than the snapshot", target_fixture="le_request"
+)
 def the_requested_capacity_is_greater_than_the_snapshot(base_request):
     """the requested capacity is greater than the snapshot."""
     base_request.size = base_request.size + 512
     yield base_request
 
 
-@when("the requested capacity is smaller than the snapshot", target_fixture="request")
+@when(
+    "the requested capacity is smaller than the snapshot", target_fixture="le_request"
+)
 def the_requested_capacity_is_smaller_than_the_snapshot(base_request):
     """the requested capacity is smaller than the snapshot."""
     base_request.size = base_request.size - 512
@@ -130,22 +134,24 @@ def the_requested_capacity_is_smaller_than_the_snapshot(base_request):
 
 
 @then("the request should fail with PreconditionFailed")
-def the_request_should_fail_with_preconditionfailed(request):
+def the_request_should_fail_with_preconditionfailed(le_request):
     """the request should fail with PreconditionFailed."""
-    restore_expect(request, http.HTTPStatus.PRECONDITION_FAILED, "FailedPrecondition")
+    restore_expect(
+        le_request, http.HTTPStatus.PRECONDITION_FAILED, "FailedPrecondition"
+    )
 
 
 @then("the request should fail with InvalidArguments")
-def the_request_should_fail_with_invalidarguments(request):
+def the_request_should_fail_with_invalidarguments(le_request):
     """the request should fail with InvalidArguments."""
-    restore_expect(request, http.HTTPStatus.BAD_REQUEST, "InvalidArgument")
+    restore_expect(le_request, http.HTTPStatus.BAD_REQUEST, "InvalidArgument")
 
 
 @then("the request should fail with OutOfRange")
-def the_request_should_fail_with_outofrange(request):
+def the_request_should_fail_with_outofrange(le_request):
     """the request should fail with OutOfRange."""
     restore_expect(
-        request, http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE, "OutOfRange"
+        le_request, http.HTTPStatus.REQUESTED_RANGE_NOT_SATISFIABLE, "OutOfRange"
     )
 
 
