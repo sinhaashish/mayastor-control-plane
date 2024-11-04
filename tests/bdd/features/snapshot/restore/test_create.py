@@ -1,4 +1,5 @@
 """Create Volume From Snapshot feature tests."""
+
 import http
 import json
 
@@ -358,7 +359,7 @@ def we_have_a_node_down(remote_node_a):
 
 @when(
     "a request to create a new volume with the snapshot as its source",
-    target_fixture="request",
+    target_fixture="le_request",
 )
 def a_request_to_create_a_new_volume_with_the_snapshot_as_its_source():
     """a request to create a new volume with the snapshot as its source."""
@@ -378,11 +379,11 @@ def we_bring_the_node_back_up():
 
 @then("the request should fail with PreconditionFailed")
 def the_request_should_fail_with_preconditionfailed(
-    request, volume_uuids, snapshot_uuids
+    le_request, volume_uuids, snapshot_uuids
 ):
     """the request should fail with PreconditionFailed."""
     restore_expect(
-        request,
+        le_request,
         volume_uuids,
         snapshot_uuids,
         http.HTTPStatus.PRECONDITION_FAILED,
