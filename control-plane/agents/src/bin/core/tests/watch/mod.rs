@@ -47,11 +47,11 @@ async fn setup_watch(client: &dyn VolumeOperations) -> (Volume, tokio::sync::mps
             let io = TokioIo::new(stream);
 
             tokio::task::spawn(async move {
-                if let Err(err) = http1::Builder::new()
+                if let Err(error) = http1::Builder::new()
                     .serve_connection(io, service_fn(notify))
                     .await
                 {
-                    println!("Error serving connection: {:?}", err);
+                    tracing::error!("Error serving connection: {error:?}");
                 }
             });
         }
