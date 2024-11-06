@@ -18,7 +18,8 @@ use kube::{
 /// ```ignore
 /// let selector = kube_forward::TargetSelector::pod_label("app", "etcd");
 /// let target = kube_forward::Target::new(selector, "client", "mayastor");
-/// let pf = kube_forward::PortForward::new(target, 35003).await?;
+/// let client = kube::Client::try_default().await?;
+/// let pf = kube_forward::PortForward::new(target, 35003, client).await?;
 ///
 /// let (_port, handle) = pf.port_forward().await?;
 /// handle.await?;
@@ -36,19 +37,15 @@ impl PortForward {
     /// # Arguments
     /// * `target` - the target we'll forward to
     /// * `local_port` - specific local port to use, if Some
-    pub async fn new(
-        target: crate::Target,
-        local_port: impl Into<Option<u16>>,
-    ) -> anyhow::Result<Self> {
-        let client = Client::try_default().await?;
+    pub fn new(target: crate::Target, local_port: impl Into<Option<u16>>, client: Client) -> Self {
         let namespace = target.namespace.name_any();
 
-        Ok(Self {
+        Self {
             target,
             local_port: local_port.into(),
             pod_api: Api::namespaced(client.clone(), &namespace),
             svc_api: Api::namespaced(client, &namespace),
-        })
+        }
     }
 
     /// The specified local port, or 0.

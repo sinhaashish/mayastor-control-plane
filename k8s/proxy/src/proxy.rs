@@ -190,12 +190,13 @@ impl ConfigBuilder<ApiRest> {
     }
     /// Tries to build an HTTP `Configuration` from the current self.
     async fn build_http(self) -> anyhow::Result<Configuration> {
-        let uri = kube_forward::HttpForward::new(self.target, Some(self.scheme.into()))
-            .await?
-            .uri()
-            .await?;
         let config = super::config_from_kubeconfig(self.kube_config).await?;
         let client = kube::Client::try_from(config)?;
+        let uri =
+            kube_forward::HttpForward::new(self.target, Some(self.scheme.into()), client.clone())
+                .uri()
+                .await?;
+
         let proxy = kube_forward::HttpProxy::new(client);
 
         let config = Configuration::builder()
@@ -208,7 +209,10 @@ impl ConfigBuilder<ApiRest> {
     }
     /// Tries to build a TCP `Configuration` from the current self.
     async fn build_tcp(self) -> anyhow::Result<Configuration> {
-        let pf = kube_forward::PortForward::new(self.target, None).await?;
+        let config = super::config_from_kubeconfig(self.kube_config).await?;
+        let client = kube::Client::try_from(config)?;
+
+        let pf = kube_forward::PortForward::new(self.target, None, client);
 
         let (port, _handle) = pf.port_forward().await?;
 
@@ -235,7 +239,10 @@ impl ConfigBuilder<ApiRest> {
 impl ConfigBuilder<Etcd> {
     /// Tries to build a TCP `Configuration` from the current self.
     pub async fn build(self) -> anyhow::Result<Uri> {
-        let pf = kube_forward::PortForward::new(self.target, None).await?;
+        let config = super::config_from_kubeconfig(self.kube_config).await?;
+        let client = kube::Client::try_from(config)?;
+
+        let pf = kube_forward::PortForward::new(self.target, None, client);
 
         let (port, _handle) = pf.port_forward().await?;
 
@@ -279,12 +286,14 @@ impl ConfigBuilder<Loki> {
     }
     /// Tries to build an HTTP `Configuration` from the current self.
     async fn build_http(self) -> anyhow::Result<(Uri, LokiClient)> {
-        let uri = kube_forward::HttpForward::new(self.target, Some(self.scheme.into()))
-            .await?
-            .uri()
-            .await?;
         let config = super::config_from_kubeconfig(self.kube_config).await?;
         let client = kube::Client::try_from(config)?;
+
+        let uri =
+            kube_forward::HttpForward::new(self.target, Some(self.scheme.into()), client.clone())
+                .uri()
+                .await?;
+
         let proxy = kube_forward::HttpProxy::new(client);
 
         let service = tower::ServiceBuilder::new()
@@ -294,7 +303,10 @@ impl ConfigBuilder<Loki> {
     }
     /// Tries to build a TCP `Configuration` from the current self.
     async fn build_tcp(self) -> anyhow::Result<(Uri, LokiClient)> {
-        let pf = kube_forward::PortForward::new(self.target, None).await?;
+        let config = super::config_from_kubeconfig(self.kube_config).await?;
+        let client = kube::Client::try_from(config)?;
+
+        let pf = kube_forward::PortForward::new(self.target, None, client);
 
         let (port, _handle) = pf.port_forward().await?;
 

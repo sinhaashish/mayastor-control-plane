@@ -32,19 +32,19 @@ impl HttpForward {
     /// Return a new `Self`.
     /// # Arguments
     /// * `target` - the target we'll forward to
-    pub async fn new<SO: Into<Option<Scheme>>>(
+    pub fn new<SO: Into<Option<Scheme>>>(
         target: crate::Target,
         scheme: SO,
-    ) -> anyhow::Result<Self> {
-        let client = kube::Client::try_default().await?;
+        client: kube::Client,
+    ) -> Self {
         let namespace = target.namespace.name_any();
 
-        Ok(Self {
+        Self {
             target,
             pod_api: Api::namespaced(client.clone(), &namespace),
             svc_api: Api::namespaced(client, &namespace),
             scheme: scheme.into().unwrap_or(Scheme::HTTP),
-        })
+        }
     }
 
     /// Returns the `hyper::Uri` that can be used to proxy with the kubeapi server.
@@ -70,7 +70,8 @@ impl HttpForward {
 /// ```ignore
 /// let selector = kube_forward::TargetSelector::svc_label("app", "api-rest");
 /// let target = kube_forward::Target::new(selector, "http", "mayastor");
-/// let pf = kube_forward::HttpForward::new(target, None).await?;
+/// let client = kube::Client::try_default().await?;
+/// let pf = kube_forward::HttpForward::new(target, None, client).await?;
 ///
 /// let uri = pf.uri().await?;
 /// tracing::info!(%uri, "generated kube-api");
