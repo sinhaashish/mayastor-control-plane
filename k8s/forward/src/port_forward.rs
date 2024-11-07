@@ -7,6 +7,7 @@ use tokio_stream::wrappers::TcpListenerStream;
 use crate::{
     pod_selection::{AnyReady, PodSelection},
     vx::{Pod, Service},
+    Error,
 };
 use kube::{
     api::{Api, ListParams},
@@ -18,7 +19,8 @@ use kube::{
 /// ```ignore
 /// let selector = kube_forward::TargetSelector::pod_label("app", "etcd");
 /// let target = kube_forward::Target::new(selector, "client", "mayastor");
-/// let pf = kube_forward::PortForward::new(target, 35003).await?;
+/// let client = kube::Client::try_default().await?;
+/// let pf = kube_forward::PortForward::new(target, 35003, client).await?;
 ///
 /// let (_port, handle) = pf.port_forward().await?;
 /// handle.await?;
@@ -36,19 +38,15 @@ impl PortForward {
     /// # Arguments
     /// * `target` - the target we'll forward to
     /// * `local_port` - specific local port to use, if Some
-    pub async fn new(
-        target: crate::Target,
-        local_port: impl Into<Option<u16>>,
-    ) -> anyhow::Result<Self> {
-        let client = Client::try_default().await?;
+    pub fn new(target: crate::Target, local_port: impl Into<Option<u16>>, client: Client) -> Self {
         let namespace = target.namespace.name_any();
 
-        Ok(Self {
+        Self {
             target,
             local_port: local_port.into(),
             pod_api: Api::namespaced(client.clone(), &namespace),
             svc_api: Api::namespaced(client, &namespace),
-        })
+        }
     }
 
     /// The specified local port, or 0.
@@ -58,11 +56,16 @@ impl PortForward {
     }
 
     /// Runs the port forwarding proxy until a SIGINT signal is received.
-    pub async fn port_forward(self) -> anyhow::Result<(u16, tokio::task::JoinHandle<()>)> {
+    pub async fn port_forward(self) -> Result<(u16, tokio::task::JoinHandle<()>), Error> {
         let addr = SocketAddr::from(([127, 0, 0, 1], self.local_port()));
 
-        let bind = TcpListener::bind(addr).await?;
-        let port = bind.local_addr()?.port();
+        let bind = TcpListener::bind(addr)
+            .await
+            .map_err(|source| Error::Io { source })?;
+        let port = bind
+            .local_addr()
+            .map_err(|source| Error::Io { source })?
+            .port();
         tracing::trace!(port, "Bound to local port");
 
         let server = TcpListenerStream::new(bind)
@@ -77,11 +80,8 @@ impl PortForward {
                     }
 
                     tokio::spawn(async move {
-                        if let Err(e) = pf.forward_connection(client_conn).await {
-                            tracing::error!(
-                                error = e.as_ref() as &dyn std::error::Error,
-                                "failed to forward connection"
-                            );
+                        if let Err(error) = pf.forward_connection(client_conn).await {
+                            tracing::error!(%error, "failed to forward connection");
                         }
                     });
 
@@ -99,10 +99,7 @@ impl PortForward {
             }),
         ))
     }
-    async fn forward_connection(
-        self,
-        mut client_conn: tokio::net::TcpStream,
-    ) -> anyhow::Result<()> {
+    async fn forward_connection(self, mut client_conn: tokio::net::TcpStream) -> Result<(), Error> {
         let target = self.finder().find(&self.target).await?;
         let (pod_name, pod_port) = target.into_parts();
 
@@ -123,7 +120,9 @@ impl PortForward {
         }
 
         drop(upstream_conn);
-        forwarder.join().await?;
+        forwarder.join().await.map_err(|error| Error::AnyHow {
+            source: error.into(),
+        })?;
         tracing::debug!(local_port, pod_port, pod_name, "connection closed");
         Ok(())
     }
@@ -146,7 +145,7 @@ impl<'a> TargetPodFinder<'a> {
     /// Finds the name and port of the target pod specified by the selector.
     /// # Arguments
     /// * `target` - the target to be found
-    pub(crate) async fn find(&self, target: &crate::Target) -> anyhow::Result<crate::TargetPod> {
+    pub(crate) async fn find(&self, target: &crate::Target) -> Result<crate::TargetPod, Error> {
         let pod_api = self.pod_api;
         let svc_api = self.svc_api;
         let ready_pod = AnyReady {};

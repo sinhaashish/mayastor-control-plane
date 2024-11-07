@@ -24,3 +24,5 @@ hyper = { version = "1.5.0", features = ["client", "http1", "http2"] }
 hyper-body = { path = "../../utils/hyper-body" }
 
 anyhow = "1.0.92"
+thiserror = "1.0.68"
+url = "2.5.2"
