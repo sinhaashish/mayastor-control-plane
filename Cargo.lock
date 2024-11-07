@@ -2442,6 +2442,7 @@ dependencies = [
  "kube",
  "serde_json",
  "shutdown",
+ "thiserror",
  "tokio",
  "tokio-stream",
  "tower 0.5.1",
@@ -2461,8 +2462,10 @@ dependencies = [
  "kube",
  "kube-forward",
  "openapi",
+ "thiserror",
  "tonic",
  "tower 0.5.1",
+ "url",
  "utils",
 ]
 

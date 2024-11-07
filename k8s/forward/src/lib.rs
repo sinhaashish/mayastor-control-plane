@@ -6,6 +6,7 @@
 //!
 //! If you're looking at a higher-level construct, please take a look at kube-proxy.
 
+mod error;
 mod http_forward;
 mod pod_selection;
 mod port_forward;
@@ -22,6 +23,9 @@ use anyhow::Context;
 use k8s_openapi::apimachinery::pkg::util::intstr::IntOrString;
 use kube::ResourceExt;
 use vx::Pod;
+
+/// The error exposed.
+pub use crate::error::Error;
 
 /// Different types of target selectors.
 #[derive(Clone)]
@@ -104,8 +108,8 @@ pub struct Target {
 
 /// A kubernetes namespace.
 /// If None, the default is "default".
-#[derive(Clone)]
-pub(crate) struct NameSpace(Option<String>);
+#[derive(Debug, Clone)]
+pub struct NameSpace(Option<String>);
 impl NameSpace {
     /// Returns the configured namespace or the default.
     pub(crate) fn name_any(&self) -> String {
@@ -121,7 +125,7 @@ pub(crate) struct TargetPod {
     port_number: u16,
 }
 impl TargetPod {
-    fn new(pod_name: String, port_number: i32) -> anyhow::Result<Self> {
+    fn new(pod_name: String, port_number: i32) -> Result<Self, Error> {
         let port_number = u16::try_from(port_number).context("Port not valid")?;
         Ok(Self {
             pod_name,
@@ -140,6 +144,8 @@ impl Target {
     /// * `selector` - target selector
     /// * `port` - target port
     /// * `namespace` - target namespace
+    ///
+    /// TODO: this namespace api is not bad, needs refactoring...
     pub fn new<I: Into<Option<T>>, T: Into<String>, P: Into<Port>>(
         selector: TargetSelector,
         port: P,
@@ -177,7 +183,7 @@ impl Target {
     }
 
     /// Returns the `TargetPod` for the given pod/port or pod/self.port.
-    pub(crate) fn find(&self, pod: &Pod, port: Option<Port>) -> anyhow::Result<TargetPod> {
+    pub(crate) fn find(&self, pod: &Pod, port: Option<Port>) -> Result<TargetPod, Error> {
         let port = match &port {
             None => &self.port,
             Some(port) => port,

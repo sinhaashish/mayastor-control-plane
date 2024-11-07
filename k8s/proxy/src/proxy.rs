@@ -1,3 +1,4 @@
+use crate::Error;
 use anyhow::anyhow;
 use openapi::{
     apis::Url,
@@ -182,16 +183,15 @@ impl ConfigBuilder<ApiRest> {
     }
 
     /// Tries to build a `Configuration` from the current self.
-    pub async fn build(self) -> anyhow::Result<Configuration> {
+    pub async fn build(self) -> Result<Configuration, Error> {
         match self.method {
             ForwardingProxy::HTTP => self.build_http().await,
             ForwardingProxy::TCP => self.build_tcp().await,
         }
     }
     /// Tries to build an HTTP `Configuration` from the current self.
-    async fn build_http(self) -> anyhow::Result<Configuration> {
-        let config = super::config_from_kubeconfig(self.kube_config).await?;
-        let client = kube::Client::try_from(config)?;
+    async fn build_http(self) -> Result<Configuration, Error> {
+        let client = super::client_from_kubeconfig(self.kube_config).await?;
         let uri =
             kube_forward::HttpForward::new(self.target, Some(self.scheme.into()), client.clone())
                 .uri()
@@ -208,9 +208,8 @@ impl ConfigBuilder<ApiRest> {
         Ok(config)
     }
     /// Tries to build a TCP `Configuration` from the current self.
-    async fn build_tcp(self) -> anyhow::Result<Configuration> {
-        let config = super::config_from_kubeconfig(self.kube_config).await?;
-        let client = kube::Client::try_from(config)?;
+    async fn build_tcp(self) -> Result<Configuration, Error> {
+        let client = super::client_from_kubeconfig(self.kube_config).await?;
 
         let pf = kube_forward::PortForward::new(self.target, None, client);
 
@@ -232,15 +231,14 @@ impl ConfigBuilder<ApiRest> {
             None => config,
         }
         .build_url(url)
-        .map_err(|e| anyhow!("Failed to Create OpenApi config: {:?}", e))
+        .map_err(|e| anyhow!("Failed to Create OpenApi config: {:?}", e).into())
     }
 }
 
 impl ConfigBuilder<Etcd> {
     /// Tries to build a TCP `Configuration` from the current self.
-    pub async fn build(self) -> anyhow::Result<Uri> {
-        let config = super::config_from_kubeconfig(self.kube_config).await?;
-        let client = kube::Client::try_from(config)?;
+    pub async fn build(self) -> Result<Uri, Error> {
+        let client = super::client_from_kubeconfig(self.kube_config).await?;
 
         let pf = kube_forward::PortForward::new(self.target, None, client);
 
@@ -278,16 +276,15 @@ impl ConfigBuilder<Loki> {
 
     /// Tries to build a `LokiClient` from the current self.
     /// This is simply a boxed `tower::Service` so can be used for any HTTP requests.
-    pub async fn build(self) -> anyhow::Result<(Uri, LokiClient)> {
+    pub async fn build(self) -> Result<(Uri, LokiClient), Error> {
         match self.method {
             ForwardingProxy::HTTP => self.build_http().await,
             ForwardingProxy::TCP => self.build_tcp().await,
         }
     }
     /// Tries to build an HTTP `Configuration` from the current self.
-    async fn build_http(self) -> anyhow::Result<(Uri, LokiClient)> {
-        let config = super::config_from_kubeconfig(self.kube_config).await?;
-        let client = kube::Client::try_from(config)?;
+    async fn build_http(self) -> Result<(Uri, LokiClient), Error> {
+        let client = super::client_from_kubeconfig(self.kube_config).await?;
 
         let uri =
             kube_forward::HttpForward::new(self.target, Some(self.scheme.into()), client.clone())
@@ -302,9 +299,8 @@ impl ConfigBuilder<Loki> {
         Ok((uri, LokiClient::new(service)))
     }
     /// Tries to build a TCP `Configuration` from the current self.
-    async fn build_tcp(self) -> anyhow::Result<(Uri, LokiClient)> {
-        let config = super::config_from_kubeconfig(self.kube_config).await?;
-        let client = kube::Client::try_from(config)?;
+    async fn build_tcp(self) -> Result<(Uri, LokiClient), Error> {
+        let client = super::client_from_kubeconfig(self.kube_config).await?;
 
         let pf = kube_forward::PortForward::new(self.target, None, client);
 

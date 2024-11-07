@@ -1,4 +1,5 @@
 use crate::{
+    error::Error,
     pod_selection::{AnyReady, PodSelection},
     vx::{Pod, Service},
 };
@@ -48,10 +49,10 @@ impl HttpForward {
     }
 
     /// Returns the `hyper::Uri` that can be used to proxy with the kubeapi server.
-    pub async fn uri(self) -> anyhow::Result<hyper::Uri> {
+    pub async fn uri(self) -> Result<hyper::Uri, Error> {
         let target = self.finder().find(&self.target).await?;
         let uri = hyper::Uri::try_from(target.with_scheme(self.scheme))?;
-        tracing::info!(%uri, "generated kube-api");
+        tracing::debug!(%uri, "generated kube-api");
         Ok(uri)
     }
 
@@ -101,7 +102,7 @@ impl HttpProxy {
         Self { client }
     }
     /// Tries to return a default `HttpProxy` with a default `kube::Client`.
-    pub async fn try_default() -> anyhow::Result<Self> {
+    pub async fn try_default() -> Result<Self, Error> {
         Ok(Self {
             client: kube::Client::try_default().await?,
         })
@@ -167,7 +168,7 @@ impl<'a> TargetFinder<'a> {
     /// Finds the `HttpTarget` according to the specified target.
     /// # Arguments
     /// * `target` - the target to be found
-    async fn find(&self, target: &crate::Target) -> anyhow::Result<HttpTarget> {
+    async fn find(&self, target: &crate::Target) -> Result<HttpTarget, Error> {
         let pod_api = self.pod_api;
         let svc_api = self.svc_api;
 
@@ -192,7 +193,10 @@ impl<'a> TargetFinder<'a> {
                 let services = svc_api.list(&Self::svc_params(&selector)).await?;
                 let service = match services.items.into_iter().next() {
                     Some(service) => Ok(service),
-                    None => Err(anyhow::anyhow!("Service '{}' not found", selector)),
+                    None => Err(Error::ServiceNotFound {
+                        selector,
+                        namespace: namespace.clone(),
+                    }),
                 }?;
 
                 Ok(HttpTarget::new(

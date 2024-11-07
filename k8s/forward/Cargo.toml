@@ -20,6 +20,7 @@ tower = "0.5.1"
 tower-http = { version = "0.6.1", features = ["map-response-body"] }
 hyper = { version = "1.5.0", features = ["client", "http1", "http2"] }
 hyper-body = { path = "../../utils/hyper-body" }
+thiserror = "1.0.68"
 
 [dev-dependencies]
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }

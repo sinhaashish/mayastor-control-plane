@@ -2,13 +2,14 @@
 //! A utility library to facilitate connections to a kubernetes cluster via
 //! the k8s-proxy library.
 
-use std::{
-    env,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
+mod error;
 mod proxy;
 
+/// A [`error::Error`].
+pub use error::Error;
+use kube::config::KubeConfigOptions;
 /// OpenApi client helpers.
 pub use proxy::{ConfigBuilder, ForwardingProxy, LokiClient, Scheme};
 
@@ -16,38 +17,25 @@ pub use proxy::{ConfigBuilder, ForwardingProxy, LokiClient, Scheme};
 pub async fn config_from_kubeconfig(
     kube_config_path: Option<PathBuf>,
 ) -> anyhow::Result<kube::Config> {
-    let file = match kube_config_path {
-        Some(config_path) => config_path,
-        None => {
-            let file_path = match env::var("KUBECONFIG") {
-                Ok(value) => Some(value),
-                Err(_) => {
-                    // Look for kubeconfig file in default location.
-                    #[cfg(any(target_os = "linux", target_os = "macos"))]
-                    let default_path = format!("{}/.kube/config", env::var("HOME")?);
-                    #[cfg(target_os = "windows")]
-                    let default_path = format!("{}/.kube/config", env::var("USERPROFILE")?);
-                    match Path::new(&default_path).exists() {
-                        true => Some(default_path),
-                        false => None,
-                    }
-                }
-            };
-            if file_path.is_none() {
-                return Err(anyhow::anyhow!(
-                    "kubeconfig file not found in default location"
-                ));
-            }
-            let mut path = PathBuf::new();
-            path.push(file_path.unwrap_or_default());
-            path
+    let mut config = match kube_config_path {
+        Some(config_path) => {
+            // NOTE: Kubeconfig file may hold multiple contexts to communicate
+            //       with different kubernetes clusters. We have to pick master
+            //       address of current-context config only
+            let kube_config = kube::config::Kubeconfig::read_from(&config_path)?;
+            kube::Config::from_custom_kubeconfig(kube_config, &Default::default()).await?
         }
+        None => kube::Config::from_kubeconfig(&KubeConfigOptions::default()).await?,
     };
-
-    // NOTE: Kubeconfig file may hold multiple contexts to communicate
-    //       with different kubernetes clusters. We have to pick master
-    //       address of current-context config only
-    let kube_config = kube::config::Kubeconfig::read_from(&file)?;
-    let config = kube::Config::from_custom_kubeconfig(kube_config, &Default::default()).await?;
+    config.apply_debug_overrides();
     Ok(config)
+}
+
+/// Get the `kube::Client` from the given kubeconfig file, or the default.
+pub async fn client_from_kubeconfig(
+    kube_config_path: Option<PathBuf>,
+) -> anyhow::Result<kube::Client> {
+    Ok(kube::Client::try_from(
+        config_from_kubeconfig(kube_config_path).await?,
+    )?)
 }
